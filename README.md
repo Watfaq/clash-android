@@ -1,2 +1,6 @@
 # clash-android
-WIP
+
+
+# Requirements
+Android SDK & NDK
+

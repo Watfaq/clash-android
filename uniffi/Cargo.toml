@@ -1,0 +1,10 @@
+[workspace]
+
+members = [
+    "clash-android-ffi",
+    "uniffi-bindgen",
+]
+resolver = "2"
+
+[workspace.dependencies]
+uniffi = "0.29"
