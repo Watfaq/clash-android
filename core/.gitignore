@@ -1,5 +1,5 @@
 /build
 
-src/main/java/uniffi/clash/*
+src/main/java/uniffi/*
 
 *.so

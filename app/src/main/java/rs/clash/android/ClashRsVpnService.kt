@@ -8,15 +8,15 @@ import kotlinx.coroutines.launch
 import java.io.FileInputStream
 import java.io.FileOutputStream
 
-class MyVpnService : VpnService() {
+class ClashRsVpnService : VpnService() {
 
     private var vpnInterface: ParcelFileDescriptor? = null
+    private var tunFd: Int? = null
 
     override fun onCreate() {
         super.onCreate()
         CoroutineScope(Dispatchers.IO).launch {
             runVpn()
-            initClash()
         }
     }
 
@@ -32,9 +32,8 @@ class MyVpnService : VpnService() {
         // Route all network traffic
         builder.addRoute("0.0.0.0", 0)
         vpnInterface = builder.establish()
-
-        val inputStream = FileInputStream(vpnInterface!!.fileDescriptor)
-        val outputStream = FileOutputStream(vpnInterface!!.fileDescriptor)
+        tunFd = vpnInterface?.detachFd()
+        initClash(tunFd!!)
 
     }
 }

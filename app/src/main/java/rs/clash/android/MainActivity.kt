@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == RESULT_OK) {
-            val intent = Intent(this, MyVpnService::class.java)
+            val intent = Intent(this, ClashRsVpnService::class.java)
             startService(intent)
             Toast.makeText(this, "VPN Started", Toast.LENGTH_SHORT).show()
         }
@@ -91,7 +91,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private suspend fun stopVpn() {
-        val intent = Intent(this, MyVpnService::class.java)
+        val intent = Intent(this, ClashRsVpnService::class.java)
         stopService(intent)
         Toast.makeText(this, "VPN Stopped", Toast.LENGTH_SHORT).show()
     }
