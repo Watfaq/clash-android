@@ -1,9 +1,9 @@
 package rs.clash.android
 
-import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
+import android.os.StrictMode
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,15 +24,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import rs.clash.android.theme.ClashAndroidTheme
 
 class MainActivity : ComponentActivity() {
+
+    var tunIntent: Intent? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Global.init(application)
+
+//        StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder(StrictMode.getVmPolicy())
+//            .detectLeakedClosableObjects()
+//            .build());
+
         enableEdgeToEdge()
         setContent {
             ClashAndroidTheme {
@@ -54,45 +58,36 @@ class MainActivity : ComponentActivity() {
             Text(text = vpnStatus, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(16.dp))
 
             Button(onClick = {
-                CoroutineScope(Dispatchers.Main).launch {
-                    startVpn()
-                    vpnStatus = "VPN Started"
-                }
+                startVpn()
+                vpnStatus = "VPN Started"
             }, modifier = Modifier.padding(8.dp)) {
                 Text("Start VPN")
             }
 
             Button(onClick = {
-                CoroutineScope(Dispatchers.Main).launch {
-                    stopVpn()
-                    vpnStatus = "VPN Stopped"
-                }
+                stopVpn()
+                vpnStatus = "VPN Stopped"
             }, modifier = Modifier.padding(8.dp)) {
                 Text("Stop VPN")
             }
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == RESULT_OK) {
-            val intent = Intent(this, ClashRsVpnService::class.java)
-            startService(intent)
+    private fun startVpn() {
+        tunIntent = VpnService.prepare(this)
+        if (tunIntent != null) {
+            // 返回非空Intent，说明需要用户授权
+            startActivityForResult(tunIntent!!, 0)
+        } else {
+            tunIntent = TunService::class.intent
+            startService(tunIntent!!)
             Toast.makeText(this, "VPN Started", Toast.LENGTH_SHORT).show()
         }
     }
-    private suspend fun startVpn() {
-        val intent = VpnService.prepare(this)
-        if (intent != null) {
-            ActivityCompat.startActivityForResult(this, intent, 0, null)
-        } else {
-            onActivityResult(0, RESULT_OK, null)
-        }
-    }
 
-    private suspend fun stopVpn() {
-        val intent = Intent(this, ClashRsVpnService::class.java)
-        stopService(intent)
+    private fun stopVpn() {
+        tunService?.stopVpn()
+
         Toast.makeText(this, "VPN Stopped", Toast.LENGTH_SHORT).show()
     }
 }
