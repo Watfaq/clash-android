@@ -1,13 +1,16 @@
 package rs.clash.android
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.net.VpnService
 import android.os.Bundle
-import android.os.StrictMode
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,8 +26,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.livedata.observeAsState
+
 import rs.clash.android.theme.ClashAndroidTheme
+import rs.clash.android.viewmodel.HomeViewModel
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 
 class MainActivity : ComponentActivity() {
 
@@ -41,14 +52,17 @@ class MainActivity : ComponentActivity() {
         setContent {
             ClashAndroidTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    ClashScreen()
+                    HomeScreen()
                 }
             }
         }
     }
     @Composable
-    fun ClashScreen() {
+    fun HomeScreen(
+        viewModel: HomeViewModel = viewModel()
+    ) {
         var vpnStatus by remember { mutableStateOf("VPN Stopped") }
+        val profilePath by viewModel.profilePath.observeAsState()
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -70,7 +84,13 @@ class MainActivity : ComponentActivity() {
             }, modifier = Modifier.padding(8.dp)) {
                 Text("Stop VPN")
             }
+            if (profilePath != null){
+                Text("Profile: $profilePath")
+            }
+            FilePickerScreen()
+
         }
+
     }
 
     private fun startVpn() {
@@ -92,5 +112,57 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun FilePickerScreen() {
+    val context = LocalContext.current
+    val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
+
+    var savedFilePath by remember { mutableStateOf<String?>(sharedPreferences.getString("profile_path", null)) }
+
+    val result = remember { mutableStateOf<Uri?>(null) }
+
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
+        result.value = it
+    }
+
+    Column {
+        Button(onClick = {
+            launcher.launch(arrayOf("*/*"))
+
+        }) {
+            Text(text = "Choose File")
+        }
+        result.value?.let { file ->
+            Text(text = "Path: $file")
+            Button(onClick = {
+                val filePath = saveFileToAppDirectory(context, file)
+                sharedPreferences.edit().putString("profile_path", filePath).apply()
+                savedFilePath = filePath
+
+            }) {
+                Text(text = "Save File")
+            }
+        }
+
+        savedFilePath?.let {
+            Text(text = "Saved file path: $it")
+        }
+    }
+}
 
 
+fun saveFileToAppDirectory(context: Context, uri: Uri): String? {
+
+
+    val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+    val file = File(context.filesDir, "default")
+
+    inputStream?.use { input ->
+        FileOutputStream(file).use { output ->
+            input.copyTo(output)
+        }
+    }
+
+    Toast.makeText(context, "File saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+    return file.absolutePath
+}

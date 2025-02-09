@@ -14,8 +14,8 @@ android {
     compileSdk = 35
     ndkVersion = rootProject.extra["ndkVersion"] as String
     defaultConfig {
-        minSdk = 24
-        targetSdk = 34
+        minSdk = 21
+        targetSdk = 35
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

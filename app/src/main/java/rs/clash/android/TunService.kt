@@ -2,15 +2,12 @@ package rs.clash.android;
 
 import android.content.Intent
 import android.net.VpnService
-import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
-import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-import java.io.IOException
 
 var tunService: TunService? = null
 
@@ -29,9 +26,8 @@ class TunService : VpnService() {
         tunService = this
         return START_STICKY
     }
-
+    // Only invoked once
     override fun onCreate() {
-
         super.onCreate()
     }
 
