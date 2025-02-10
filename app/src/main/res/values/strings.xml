@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">clash android</string>
+    <string name="profile_screen">配置</string>
+    <string name="home_screen">首页</string>
 </resources>

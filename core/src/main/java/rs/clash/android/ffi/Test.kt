@@ -1,4 +1,4 @@
-package rs.clash.android
+package rs.clash.android.ffi
 
 import uniffi.clash_android_ffi.initLogger
 import uniffi.clash_android_ffi.initMain

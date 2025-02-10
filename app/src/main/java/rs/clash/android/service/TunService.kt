@@ -1,4 +1,4 @@
-package rs.clash.android;
+package rs.clash.android.service
 
 import android.content.Intent
 import android.net.VpnService
@@ -7,6 +7,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import rs.clash.android.ffi.initClash
 
 
 var tunService: TunService? = null
