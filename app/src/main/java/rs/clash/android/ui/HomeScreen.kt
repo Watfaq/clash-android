@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
@@ -28,22 +27,26 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.Global
 import rs.clash.android.viewmodel.HomeViewModel
 
-
 @Destination<RootGraph>(start = true)
 @Composable
-fun HomeScreen(navigator: DestinationsNavigator, viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(
+    navigator: DestinationsNavigator,
+    modifier: Modifier = Modifier,
+    viewModel: HomeViewModel = viewModel(),
+) {
     var vpnStatus by remember { mutableStateOf("VPN Stopped") }
     val profilePath by viewModel.profilePath.observeAsState()
 
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { it ->
-        if (it.resultCode == RESULT_OK) {
-            Toast.makeText(Global.application, "VPN Service Authorization success", Toast.LENGTH_SHORT).show()
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { it ->
+            if (it.resultCode == RESULT_OK) {
+                Toast.makeText(Global.application, "VPN Service Authorization success", Toast.LENGTH_SHORT).show()
+            }
         }
-    }
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(text = vpnStatus, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(16.dp))
 
@@ -60,7 +63,7 @@ fun HomeScreen(navigator: DestinationsNavigator, viewModel: HomeViewModel = view
         }, modifier = Modifier.padding(8.dp)) {
             Text("Stop VPN")
         }
-        if (profilePath != null){
+        if (profilePath != null) {
             Text("Profile: $profilePath")
         }
     }

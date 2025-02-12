@@ -6,14 +6,18 @@ plugins {
 }
 
 val baseVersionName = "0.1.0"
-val Project.verName: String get() = "${baseVersionName}${versionNameSuffix}.${exec("git rev-parse --short HEAD")}"
+val Project.verName: String get() = "${baseVersionName}$versionNameSuffix.${exec("git rev-parse --short HEAD")}"
 val Project.verCode: Int get() = exec("git rev-list --count HEAD").toInt()
 val Project.isDevVersion: Boolean get() = exec("git tag -l v$baseVersionName").isEmpty()
 val Project.versionNameSuffix: String get() = if (isDevVersion) ".dev" else ""
 
-fun Project.exec(command: String): String = providers.exec {
-    commandLine(command.split(" "))
-}.standardOutput.asText.get().trim()
+fun Project.exec(command: String): String =
+    providers
+        .exec {
+            commandLine(command.split(" "))
+        }.standardOutput.asText
+        .get()
+        .trim()
 
 android {
     namespace = "rs.clash.android"
@@ -34,14 +38,14 @@ android {
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
         debug {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }

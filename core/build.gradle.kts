@@ -1,7 +1,3 @@
-import com.android.builder.model.SourceProvider
-import java.io.File
-import kotlin.collections.all
-
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -50,6 +46,7 @@ cargoNdk {
     module  = "uniffi"  // Directory containing Cargo.toml
     librariesNames = arrayListOf("libclash_android_ffi.so")
     extraCargoBuildArguments = arrayListOf("-p", "clash-android-ffi")
+    buildType = "release"
 }
 
 android {

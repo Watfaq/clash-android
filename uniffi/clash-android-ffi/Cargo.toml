@@ -15,8 +15,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt"]}
 paranoid-android = "0.2"
 
-clash_lib = { path = "../../../clash-rs/clash_lib", features = ["tuic"]}
+clash_lib = { path = "../../../clash-rs/clash_lib", features = ["tuic"] }
 
+jni = "0.21"
 
 [build-dependencies]
 uniffi = { workspace = true, features = ["build"] }

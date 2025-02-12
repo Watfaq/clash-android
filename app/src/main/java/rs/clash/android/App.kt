@@ -10,12 +10,12 @@ import com.ramcosta.composedestinations.rememberNavHostEngine
 import rs.clash.android.ui.BottomBar
 
 @Composable
-fun ClashApp(){
+fun ClashApp(modifier: Modifier = Modifier) {
     val engine = rememberNavHostEngine()
     val navCtrl = engine.rememberNavController()
 
     Scaffold(
-        bottomBar = { BottomBar(navCtrl) }
+        bottomBar = { BottomBar(navCtrl) },
     ) { innerPadding ->
         DestinationsNavHost(
             engine = engine,

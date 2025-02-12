@@ -2,7 +2,6 @@ package rs.clash.android.ui
 
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -23,13 +22,14 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.viewmodel.ProfileViewModel
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
 
-@Destination<RootGraph>()
 @Composable
-fun ProfileScreen(navigator: DestinationsNavigator, vm: ProfileViewModel = viewModel()) {
+@Destination<RootGraph>()
+fun ProfileScreen(
+    navigator: DestinationsNavigator,
+    modifier: Modifier = Modifier,
+    vm: ProfileViewModel = viewModel(),
+) {
     val context = LocalContext.current
     val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
 
@@ -37,18 +37,18 @@ fun ProfileScreen(navigator: DestinationsNavigator, vm: ProfileViewModel = viewM
 
     val result = remember { mutableStateOf<Uri?>(null) }
 
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-        result.value = it
-    }
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
+            result.value = it
+        }
 
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Button(onClick = {
             launcher.launch(arrayOf("*/*"))
-
         }) {
             Text(text = "Choose File")
         }
@@ -58,7 +58,6 @@ fun ProfileScreen(navigator: DestinationsNavigator, vm: ProfileViewModel = viewM
                 val filePath = vm.saveFileToAppDirectory(context, file)
                 sharedPreferences.edit().putString("profile_path", filePath).apply()
                 savedFilePath = filePath
-
             }) {
                 Text(text = "Save File")
             }
@@ -69,4 +68,3 @@ fun ProfileScreen(navigator: DestinationsNavigator, vm: ProfileViewModel = viewM
         }
     }
 }
-

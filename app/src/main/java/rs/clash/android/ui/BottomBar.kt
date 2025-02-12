@@ -4,35 +4,37 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.TextSnippet
 import androidx.compose.material.icons.outlined.Home
-
+import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.navigation.NavHostController
-import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
-import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
-import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavHostController
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination
+import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
+import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
+import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import rs.clash.android.R
 
 enum class BottomBarItem(
     val direction: DirectionDestinationSpec,
     val icon: ImageVector,
-    @StringRes val label: Int
+    @StringRes val label: Int,
 ) {
     Home(HomeScreenDestination, Icons.Outlined.Home, R.string.home_screen),
     Profile(ProfileScreenDestination, Icons.AutoMirrored.Outlined.TextSnippet, R.string.profile_screen),
 }
+
 @Composable
 fun BottomBar(
-    navController: NavHostController
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
 ) {
     val navigator = navController.rememberDestinationsNavigator()
     NavigationBar {
@@ -66,7 +68,7 @@ fun BottomBar(
                 icon = {
                     Icon(
                         destination.icon,
-                        contentDescription = stringResource(destination.label)
+                        contentDescription = stringResource(destination.label),
                     )
                 },
                 label = { Text(stringResource(destination.label)) },

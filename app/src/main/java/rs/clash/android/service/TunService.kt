@@ -7,19 +7,22 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import rs.clash.android.Global
 import rs.clash.android.ffi.initClash
-
+import uniffi.clash_android_ffi.ProfileOverride
 
 var tunService: TunService? = null
 
 class TunService : VpnService() {
-
     private var vpnInterface: ParcelFileDescriptor? = null
     private var tunFd: Int? = null
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
-        Log.i("clash","onStartCommand")
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
+        Log.i("clash", "onStartCommand")
         CoroutineScope(Dispatchers.Default).launch {
             runVpn()
         }
@@ -27,6 +30,7 @@ class TunService : VpnService() {
         tunService = this
         return START_STICKY
     }
+
     // Only invoked once
     override fun onCreate() {
         super.onCreate()
@@ -52,12 +56,13 @@ class TunService : VpnService() {
         vpnInterface = builder.establish()
 
         tunFd = vpnInterface?.fd
-        initClash(tunFd!!)
 
+        initClash(Global.profile_path, ProfileOverride(tunFd!!, "${Global.application.cacheDir}/clash-rs.log"))
     }
 
     fun stopVpn() {
         vpnInterface?.close()
         vpnInterface = null
+        stopSelf()
     }
 }

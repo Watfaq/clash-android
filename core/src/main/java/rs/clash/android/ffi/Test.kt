@@ -1,11 +1,12 @@
 package rs.clash.android.ffi
 
+import uniffi.clash_android_ffi.ProfileOverride
 import uniffi.clash_android_ffi.initLogger
 import uniffi.clash_android_ffi.initMain
-import uniffi.clash_android_ffi.initTokio
 
-suspend fun initClash(tunFd: Int) {
-    initTokio()
+suspend fun initClash(config_path: String, over: ProfileOverride) {
     initLogger()
-    initMain(tunFd)
+    JNI.setup()
+
+    initMain(config_path, over)
 }

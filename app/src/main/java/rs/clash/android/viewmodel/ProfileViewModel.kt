@@ -8,10 +8,11 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 
-class ProfileViewModel: ViewModel() {
-    fun saveFileToAppDirectory(context: Context, uri: Uri): String? {
-
-
+class ProfileViewModel : ViewModel() {
+    fun saveFileToAppDirectory(
+        context: Context,
+        uri: Uri,
+    ): String? {
         val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
         val file = File(context.filesDir, "default")
 

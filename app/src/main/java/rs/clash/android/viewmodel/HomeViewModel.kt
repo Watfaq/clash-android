@@ -1,6 +1,5 @@
 package rs.clash.android.viewmodel
 
-import android.app.Activity.RESULT_OK
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.net.VpnService
@@ -10,11 +9,11 @@ import androidx.activity.result.ActivityResult
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import rs.clash.android.Global
-import rs.clash.android.service.TunService
 import rs.clash.android.intent
+import rs.clash.android.service.TunService
 import rs.clash.android.service.tunService
 
-class HomeViewModel: ViewModel() {
+class HomeViewModel : ViewModel() {
     var profilePath = MutableLiveData<String?>(null)
     var tunIntent: Intent? = null
 
@@ -22,10 +21,11 @@ class HomeViewModel: ViewModel() {
         val context = Global.application.applicationContext
         val sharedPreferences = context.getSharedPreferences("file_prefs", MODE_PRIVATE)
         profilePath.value = sharedPreferences.getString("profile_path", null)
-
+        Global.profile_path = profilePath.value ?: ""
         sharedPreferences.registerOnSharedPreferenceChangeListener { _, key ->
-            if (key == "profile_path"){
+            if (key == "profile_path") {
                 profilePath.value = sharedPreferences.getString("profile_path", null)
+                Global.profile_path = profilePath.value ?: ""
             }
         }
     }
@@ -43,8 +43,6 @@ class HomeViewModel: ViewModel() {
         }
     }
 
-
-
     fun stopVpn() {
         val app = Global.application
         tunService?.stopVpn()
@@ -52,5 +50,3 @@ class HomeViewModel: ViewModel() {
         Toast.makeText(app, "VPN Stopped", Toast.LENGTH_SHORT).show()
     }
 }
-
-

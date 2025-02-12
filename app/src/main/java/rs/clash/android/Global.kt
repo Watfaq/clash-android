@@ -1,7 +1,6 @@
 package rs.clash.android
 
 import android.app.Application
-import android.content.ContextWrapper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -11,6 +10,8 @@ object Global : CoroutineScope by CoroutineScope(Dispatchers.IO) {
         get() = application_
 
     private lateinit var application_: Application
+
+    var profile_path: String = ""
 
     fun init(application: Application) {
         this.application_ = application
