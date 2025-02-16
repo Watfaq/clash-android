@@ -1,11 +1,18 @@
 use std::{
-    sync::{LazyLock, Once, OnceLock},
-    time::Duration,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    sync::{Arc, LazyLock, Once, OnceLock},
 };
 
-use clash_lib::Config;
-use tokio::{runtime::Runtime, task::JoinHandle};
-use tracing::{info, trace};
+use clash_lib::{
+    app::dns::{self, config::DNSListenAddr},
+    config::internal::config::{General, Inbound, IpNet},
+    proxy::utils::{set_socket_protector, SocketProtector as LibSocketProtector},
+    start, Config,
+};
+
+use log::init_logger;
+use tokio::{runtime::Runtime, sync::broadcast, task::JoinHandle};
+use tracing::{error, info};
 
 use clash_lib::config::internal::config::TunConfig;
 
@@ -25,19 +32,7 @@ pub static RT: LazyLock<Runtime> = LazyLock::new(|| {
     rt
 });
 
-uniffi::setup_scaffolding!();
-
 static VM: OnceLock<jni::JavaVM> = OnceLock::new();
-
-#[uniffi::export]
-fn init_logger() {
-    std::env::set_var("NO_COLOR", "1");
-    static INIT: Once = Once::new();
-    INIT.call_once(|| {
-        log::init_logger();
-        tracing::info!("Init logger");
-    });
-}
 
 #[export_name = "Java_rs_clash_android_ffi_JNI_setup"]
 pub extern "system" fn setup_tokio(env: jni::JNIEnv, _class: jni::objects::JClass) {
@@ -87,26 +82,76 @@ impl std::fmt::Display for FfiError {
         }
     }
 }
+pub trait SocketProtector: Send + Sync {
+    fn protect(&self, fd: i32);
+}
 
 #[uniffi::export]
-async fn init_main(config_path: String, over: ProfileOverride) -> Result<(), FfiError> {
+async fn init_main(
+    config_path: String,
+    work_dir: String,
+    over: ProfileOverride,
+    socket_protector: Arc<dyn SocketProtector>,
+) -> Result<(), FfiError> {
+    let mut config = Config::File(config_path.clone()).try_parse()?;
+    config.tun = TunConfig {
+        enable: true,
+        device_id: format!("fd://{}", over.tun_fd),
+        route_all: false,
+        routes: Vec::new(),
+        gateway: IpNet::new(Ipv4Addr::new(10, 0, 0, 1).into(), 30)?,
+        mtu: None,
+        so_mark: None,
+        route_table: None,
+        dns_hijack: true,
+    };
+    config.dns = dns::Config {
+        enable: true,
+        listen: DNSListenAddr {
+            udp: Some(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 2)), 53)),
+            ..config.dns.listen
+        },
+        nameserver: dns::Config::parse_nameserver(&["114.114.114.114".into()]).unwrap(),
+        ..config.dns
+    };
+    config.general = General {
+        inbound: Inbound {
+            port: Some(over.http_port),
+            socks_port: Some(over.socks_port),
+            mixed_port: Some(over.mixed_port),
+            ..config.general.inbound
+        },
+        ..config.general
+    };
+    std::env::set_var("RUST_BACKTRACE", "1");
+    std::env::set_var("NO_COLOR", "1");
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        init_logger(config.general.log_level.into());
+        // color_eyre::install().unwrap();
+        tracing::info!("Init logger");
+    });
     info!(
         "Config path: {config_path}\n\tTUN fd: {}\n\tLog file path: {}",
         over.tun_fd, over.log_file_path
     );
-    let config = Config::File(config_path).try_parse()?;
-    config.tun = TunConfig {
-        enable: todo!(),
-        device_id: todo!(),
-        route_all: todo!(),
-        routes: todo!(),
-        gateway: todo!(),
-        mtu: todo!(),
-        so_mark: todo!(),
-        route_table: todo!(),
-        dns_hijack: todo!(),
-    };
-    let _: JoinHandle<eyre::Result<()>> = RT.spawn(async { Ok(()) });
+
+    set_socket_protector(unsafe {
+        // TODO add a test
+        std::mem::transmute::<Arc<dyn SocketProtector>, Arc<dyn LibSocketProtector>>(
+            socket_protector,
+        )
+    });
+
+    let _: JoinHandle<eyre::Result<()>> = RT.spawn(async {
+        let (log_tx, _) = broadcast::channel(100);
+        info!("Starting clash-rs");
+        // start(config, work_dir, log_tx).await.unwrap();
+        if let Err(err) = start(config, work_dir, log_tx).await {
+            error!("{:#}", eyre::eyre!(err));
+        }
+        Ok(())
+    });
     Ok(())
 }
 
@@ -114,3 +159,5 @@ async fn init_main(config_path: String, over: ProfileOverride) -> Result<(), Ffi
 fn shutdown() {
     info!("clashrs shutdown");
 }
+
+uniffi::include_scaffolding!("clash");

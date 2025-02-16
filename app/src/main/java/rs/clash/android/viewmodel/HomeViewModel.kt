@@ -21,11 +21,11 @@ class HomeViewModel : ViewModel() {
         val context = Global.application.applicationContext
         val sharedPreferences = context.getSharedPreferences("file_prefs", MODE_PRIVATE)
         profilePath.value = sharedPreferences.getString("profile_path", null)
-        Global.profile_path = profilePath.value ?: ""
+        Global.profilePath = profilePath.value ?: ""
         sharedPreferences.registerOnSharedPreferenceChangeListener { _, key ->
             if (key == "profile_path") {
                 profilePath.value = sharedPreferences.getString("profile_path", null)
-                Global.profile_path = profilePath.value ?: ""
+                Global.profilePath = profilePath.value ?: ""
             }
         }
     }

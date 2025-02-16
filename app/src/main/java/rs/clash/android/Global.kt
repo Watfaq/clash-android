@@ -11,7 +11,7 @@ object Global : CoroutineScope by CoroutineScope(Dispatchers.IO) {
 
     private lateinit var application_: Application
 
-    var profile_path: String = ""
+    var profilePath: String = ""
 
     fun init(application: Application) {
         this.application_ = application

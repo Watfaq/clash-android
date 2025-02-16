@@ -10,6 +10,8 @@ import kotlinx.coroutines.launch
 import rs.clash.android.Global
 import rs.clash.android.ffi.initClash
 import uniffi.clash_android_ffi.ProfileOverride
+import uniffi.clash_android_ffi.SocketProtector
+import java.io.File
 
 var tunService: TunService? = null
 
@@ -49,15 +51,36 @@ class TunService : VpnService() {
     private suspend fun runVpn() {
         val builder = Builder()
         builder.setSession("ClashRS VPNService")
-        builder.addAddress("10.0.0.2", 24)
+        builder.addAddress("10.0.0.1", 30)
         // Route all network traffic
         builder.addRoute("0.0.0.0", 0)
+        builder.addDnsServer("10.0.0.2")
 
         vpnInterface = builder.establish()
 
         tunFd = vpnInterface?.fd
+        val assets = Global.application.assets
+        listOf("Country.mmdb", "geosite.dat").forEach { name ->
+            assets
+                .open("clash-res/$name")
+                .use { it ->
+                    val file = File("${Global.application.cacheDir}/$name")
+                    file.deleteOnExit()
+                    file.createNewFile()
+                    it.copyTo(file.outputStream())
+                }
+        }
 
-        initClash(Global.profile_path, ProfileOverride(tunFd!!, "${Global.application.cacheDir}/clash-rs.log"))
+        initClash(
+            Global.profilePath,
+            Global.application.cacheDir.toString(),
+            ProfileOverride(tunFd!!, "${Global.application.cacheDir}/clash-rs.log"),
+            object : SocketProtector {
+                override fun protect(fd: Int) {
+                    this@TunService.protect(fd)
+                }
+            },
+        )
     }
 
     fun stopVpn() {

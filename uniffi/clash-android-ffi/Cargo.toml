@@ -3,6 +3,10 @@ name = "clash-android-ffi"
 version.workspace = true
 edition.workspace = true
 
+[features]
+tokio-console = []
+ffi-trace = ["uniffi/ffi-trace"]
+
 [dependencies]
 uniffi.workspace = true
 
@@ -14,8 +18,9 @@ tokio = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt"]}
 paranoid-android = "0.2"
+color-eyre = "0.6"
 
-clash_lib = { path = "../../../clash-rs/clash_lib", features = ["tuic"] }
+clash_lib = { path = "../../../clash-rs/clash_lib", features = ["tuic", "internal"] }
 
 jni = "0.21"
 
@@ -23,4 +28,5 @@ jni = "0.21"
 uniffi = { workspace = true, features = ["build"] }
 
 [lib]
-crate-type = ["cdylib", "staticlib", "lib"]
+crate-type = ["cdylib", "lib"]
+# name = "uniffi_callbacks"
