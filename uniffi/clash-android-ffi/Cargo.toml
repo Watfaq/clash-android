@@ -20,7 +20,14 @@ tracing-subscriber = { version = "0.3", default-features = false, features = ["s
 paranoid-android = "0.2"
 color-eyre = "0.6"
 
-clash_lib = { path = "../../../clash-rs/clash_lib", features = ["tuic", "internal"] }
+clash-lib = { package = "clash-lib", path = "../../../clash-rs/clash-lib", features = ["tuic", "internal",
+    "shadowquic",
+    "shadowsocks",
+    "tun",
+    "wireguard",
+    "ring"], default-features = false }
+
+ipnet = "2.11"
 
 jni = "0.21"
 
