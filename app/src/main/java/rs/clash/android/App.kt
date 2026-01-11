@@ -28,7 +28,8 @@ fun ClashApp(modifier: Modifier = Modifier) {
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == RESULT_OK) {
-            Toast.makeText(Global.application, "VPN Service Authorization success", Toast.LENGTH_SHORT).show()
+            // Permission granted, trigger start again
+            homeViewModel.startVpn(it.run { null }!!) 
         }
     }
 

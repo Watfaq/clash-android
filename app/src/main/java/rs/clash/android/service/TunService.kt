@@ -30,10 +30,10 @@ class TunService : VpnService() {
         }
 
         tunService = this
+        Global.isServiceRunning.value = true
         return START_STICKY
     }
 
-    // Only invoked once
     override fun onCreate() {
         super.onCreate()
     }
@@ -52,12 +52,8 @@ class TunService : VpnService() {
         val builder = Builder()
         builder.setSession("ClashRS VPNService")
         builder.addAddress("10.0.0.1", 30)
-        // Route all network traffic
         builder.addRoute("0.0.0.0", 0)
         builder.addDnsServer("10.0.0.2")
-
-        // BYPASS THIS APP'S TRAFFIC - prevents routing loops!
-        // This ensures clash app's own traffic doesn't get routed through VPN tunnel
         builder.addDisallowedApplication(packageName)
 
         vpnInterface = builder.establish()
@@ -90,6 +86,8 @@ class TunService : VpnService() {
     fun stopVpn() {
         vpnInterface?.close()
         vpnInterface = null
+        tunService = null
+        Global.isServiceRunning.value = false
         stopSelf()
     }
 }
