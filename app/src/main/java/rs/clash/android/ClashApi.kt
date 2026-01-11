@@ -24,6 +24,31 @@ data class DelayResponse(
 
 data class MemoryResponse(val inuse: Long, val oslimit: Long)
 
+data class ConnectionsResponse(
+    val downloadTotal: Long,
+    val uploadTotal: Long,
+    val connections: List<Connection>
+)
+
+data class Connection(
+    val id: String,
+    val metadata: Metadata,
+    val upload: Long,
+    val download: Long,
+    val start: String,
+    val chains: List<String>,
+    val rule: String
+)
+
+data class Metadata(
+    val network: String,
+    val type: String,
+    val sourceIP: String,
+    val destinationIP: String,
+    val destinationPort: String,
+    val host: String
+)
+
 data class ConfigResponse(
     @SerializedName("external-controller") val externalController: String?,
     @SerializedName("secret") val secret: String?,
@@ -46,6 +71,9 @@ interface ClashApi {
 
     @GET("memory")
     suspend fun getMemory(): MemoryResponse
+
+    @GET("connections")
+    suspend fun getConnections(): ConnectionsResponse
 
     @GET("configs")
     suspend fun getConfigs(): ConfigResponse

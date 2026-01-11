@@ -46,6 +46,16 @@ class HomeViewModel : ViewModel() {
     private var clashApi: ClashApi? = null
     val delays = mutableStateMapOf<String, String>()
 
+    // Overview data
+    var memoryUsage by mutableStateOf<MemoryResponse?>(null)
+        private set
+    var connectionCount by mutableStateOf(0)
+        private set
+    var totalDownload by mutableStateOf(0L)
+        private set
+    var totalUpload by mutableStateOf(0L)
+        private set
+
     init {
         val context = Global.application.applicationContext
         val sharedPreferences = context.getSharedPreferences("file_prefs", MODE_PRIVATE)
@@ -62,20 +72,45 @@ class HomeViewModel : ViewModel() {
             }
         }
 
-        // Listen for service status changes
         viewModelScope.launch {
             Global.isServiceRunning.collectLatest { running ->
                 isVpnRunning = running
                 if (running) {
-                    // Give the core a moment to start the API server
                     delay(1000)
                     fetchProxies()
+                    startStatsPolling()
                 } else {
                     proxies = emptyMap()
                     delays.clear()
                     errorMessage = null
+                    memoryUsage = null
+                    connectionCount = 0
+                    totalDownload = 0L
+                    totalUpload = 0L
                 }
             }
+        }
+    }
+
+    private fun startStatsPolling() {
+        viewModelScope.launch {
+            while (isVpnRunning) {
+                fetchOverviewStats()
+                delay(3000) // Poll every 3 seconds
+            }
+        }
+    }
+
+    private suspend fun fetchOverviewStats() {
+        if (clashApi == null || !isVpnRunning) return
+        try {
+            memoryUsage = clashApi?.getMemory()
+            val connResponse = clashApi?.getConnections()
+            connectionCount = connResponse?.connections?.size ?: 0
+            totalDownload = connResponse?.downloadTotal ?: 0L
+            totalUpload = connResponse?.uploadTotal ?: 0L
+        } catch (e: Exception) {
+            Log.e("ClashAPI", "Failed to fetch stats", e)
         }
     }
 

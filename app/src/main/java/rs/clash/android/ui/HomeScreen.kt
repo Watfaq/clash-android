@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
@@ -13,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,8 +23,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.launch
 import rs.clash.android.Proxy
 import rs.clash.android.viewmodel.HomeViewModel
+import java.util.*
 
 @Destination<RootGraph>(start = true)
 @Composable
@@ -30,6 +35,60 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel()
 ) {
+    val tabs = listOf("Proxies", "Overview")
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        topBar = {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Clash Dashboard",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = { viewModel.fetchProxies() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                }
+                TabRow(selectedTabIndex = pagerState.currentPage) {
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = pagerState.currentPage == index,
+                            onClick = {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            },
+                            text = { Text(title) }
+                        )
+                    }
+                }
+            }
+        }
+    ) { padding ->
+        HorizontalPager(
+            state = pagerState,
+            modifier = modifier.padding(padding).fillMaxSize(),
+            verticalAlignment = Alignment.Top
+        ) { page ->
+            when (page) {
+                0 -> ProxyTab(viewModel)
+                1 -> OverviewTab(viewModel)
+            }
+        }
+    }
+}
+
+@Composable
+fun ProxyTab(viewModel: HomeViewModel) {
     val proxies = viewModel.proxies
     val isRefreshing = viewModel.isRefreshing
     val errorMessage = viewModel.errorMessage
@@ -39,59 +98,41 @@ fun HomeScreen(
         viewModel.fetchProxies()
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+
+        if (proxies.isEmpty() && !isRefreshing) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(text = "No proxy groups found. Is VPN running?")
+            }
+        } else {
+            val proxyTypes = remember(proxies) { proxies.mapValues { it.value.type } }
+            
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = "Proxy Selection",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                IconButton(onClick = { viewModel.fetchProxies() }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                }
-            }
-
-            if (errorMessage != null) {
-                Text(
-                    text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-
-            if (proxies.isEmpty() && !isRefreshing) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "No proxy groups found. Is VPN running?")
-                }
-            } else {
-                val proxyTypes = remember(proxies) { proxies.mapValues { it.value.type } }
-                
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    val groups = proxies.filter { it.value.all != null }
-                    items(groups.toList()) { (name, proxy) ->
-                        ProxyGroupWidget(
-                            name = name,
-                            proxy = proxy,
-                            delays = delays,
-                            proxyTypes = proxyTypes,
-                            onSelect = { selectedName ->
-                                viewModel.selectProxy(name, selectedName)
-                            },
-                            onTestDelay = {
-                                proxy.all?.let { viewModel.testGroupDelay(it) }
-                            }
-                        )
-                    }
+                val groups = proxies.filter { it.value.all != null }
+                items(groups.toList()) { (name, proxy) ->
+                    ProxyGroupWidget(
+                        name = name,
+                        proxy = proxy,
+                        delays = delays,
+                        proxyTypes = proxyTypes,
+                        onSelect = { selectedName ->
+                            viewModel.selectProxy(name, selectedName)
+                        },
+                        onTestDelay = {
+                            proxy.all?.let { viewModel.testGroupDelay(it) }
+                        }
+                    )
                 }
             }
         }
@@ -100,6 +141,71 @@ fun HomeScreen(
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
     }
+}
+
+@Composable
+fun OverviewTab(viewModel: HomeViewModel) {
+    val memory = viewModel.memoryUsage
+    val connections = viewModel.connectionCount
+    val download = viewModel.totalDownload
+    val upload = viewModel.totalUpload
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        StatsCard(
+            title = "Memory Usage",
+            value = memory?.let { formatSize(it.inuse) } ?: "N/A",
+            subtitle = memory?.let { "Limit: ${formatSize(it.oslimit)}" } ?: ""
+        )
+        
+        StatsCard(
+            title = "Active Connections",
+            value = connections.toString(),
+            subtitle = "Ongoing network sessions"
+        )
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            StatsCard(
+                modifier = Modifier.weight(1f),
+                title = "Total Download",
+                value = formatSize(download)
+            )
+            StatsCard(
+                modifier = Modifier.weight(1f),
+                title = "Total Upload",
+                value = formatSize(upload)
+            )
+        }
+    }
+}
+
+@Composable
+fun StatsCard(
+    title: String,
+    value: String,
+    subtitle: String = "",
+    modifier: Modifier = Modifier
+) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.secondary)
+            Text(text = value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            if (subtitle.isNotEmpty()) {
+                Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+            }
+        }
+    }
+}
+
+fun formatSize(size: Long): String {
+    if (size <= 0) return "0 B"
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
+    return String.format("%.2f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
 }
 
 @Composable
