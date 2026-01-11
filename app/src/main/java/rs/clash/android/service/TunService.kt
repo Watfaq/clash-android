@@ -10,7 +10,6 @@ import kotlinx.coroutines.launch
 import rs.clash.android.Global
 import rs.clash.android.ffi.initClash
 import uniffi.clash_android_ffi.ProfileOverride
-import uniffi.clash_android_ffi.SocketProtector
 import java.io.File
 
 var tunService: TunService? = null
@@ -74,12 +73,7 @@ class TunService : VpnService() {
         initClash(
             Global.profilePath,
             Global.application.cacheDir.toString(),
-            ProfileOverride(tunFd!!, "${Global.application.cacheDir}/clash-rs.log"),
-            object : SocketProtector {
-                override fun protect(fd: Int) {
-                    this@TunService.protect(fd)
-                }
-            },
+            ProfileOverride(tunFd!!, "${Global.application.cacheDir}/clash-rs.log")
         )
     }
 

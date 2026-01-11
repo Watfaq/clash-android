@@ -1,6 +1,0 @@
-namespace clash_android_ffi {};
-
-[Trait, WithForeign]
-interface SocketProtector {
-  void protect(i32 fd);
-};

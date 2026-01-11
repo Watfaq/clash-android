@@ -27,8 +27,7 @@ clash-lib = { package = "clash-lib", path = "../../../clash-rs/clash-lib", featu
     "wireguard",
     "ring"], default-features = false }
 
-ipnet = "2.11"
-
+ipnet = "2"
 jni = "0.21"
 
 [build-dependencies]

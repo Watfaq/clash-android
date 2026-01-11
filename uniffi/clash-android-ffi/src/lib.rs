@@ -1,10 +1,10 @@
 use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    sync::{Arc, LazyLock, Once, OnceLock},
+    net::Ipv4Addr,
+    sync::{LazyLock, Once, OnceLock},
 };
 
 use clash_lib::{
-    start, Config,
+    Config, config::config::Controller, start
 };
 
 use log::init_logger;
@@ -31,7 +31,7 @@ pub static RT: LazyLock<Runtime> = LazyLock::new(|| {
 
 static VM: OnceLock<jni::JavaVM> = OnceLock::new();
 
-#[export_name = "Java_rs_clash_android_ffi_JNI_setup"]
+#[unsafe(export_name = "Java_rs_clash_android_ffi_JNI_setup")]
 pub extern "system" fn setup_tokio(env: jni::JNIEnv, _class: jni::objects::JClass) {
     let vm = env.get_java_vm().unwrap();
     _ = VM.set(vm);
@@ -79,16 +79,12 @@ impl std::fmt::Display for FfiError {
         }
     }
 }
-pub trait SocketProtector: Send + Sync {
-    fn protect(&self, fd: i32);
-}
 
 #[uniffi::export]
 async fn init_main(
     config_path: String,
     work_dir: String,
     over: ProfileOverride,
-    socket_protector: Arc<dyn SocketProtector>,
 ) -> Result<(), FfiError> {
     let mut config = Config::File(config_path.clone()).try_parse()?;
     config.tun = TunConfig {
@@ -99,14 +95,21 @@ async fn init_main(
         gateway: ipnet::Ipv4Net::new(Ipv4Addr::new(10, 0, 0, 1), 30)?.into(),
         gateway_v6: None,
         mtu: None,
-        so_mark: 0,
+        so_mark: None,
         route_table: 0,
         dns_hijack: true,
     };
+
+    config.general.controller = Controller {
+        external_controller: Some("127.0.0.1:9090".to_string()),
+        ..Default::default()
+    };
     // Note: DNS and general config would need to be updated based on the actual API
     // For now, keeping minimal changes to allow compilation
-    std::env::set_var("RUST_BACKTRACE", "1");
-    std::env::set_var("NO_COLOR", "1");
+    unsafe {
+        std::env::set_var("RUST_BACKTRACE", "1");
+        std::env::set_var("NO_COLOR", "1");
+    }
     static INIT: Once = Once::new();
     INIT.call_once(|| {
         init_logger(config.general.log_level.into());
@@ -137,5 +140,5 @@ async fn init_main(
 fn shutdown() {
     info!("clashrs shutdown");
 }
+uniffi::setup_scaffolding!("clash_android_ffi");
 
-uniffi::include_scaffolding!("clash");

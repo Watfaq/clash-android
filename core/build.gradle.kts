@@ -33,8 +33,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.runtime)
-    //noinspection UseTomlInstead
-    implementation("net.java.dev.jna:jna:5.15.0@aar")
+    //noinspection Aligned16KB,UseTomlInstead
+    implementation("net.java.dev.jna:jna:5.18.1@aar")
 
 
     testImplementation(libs.junit)
