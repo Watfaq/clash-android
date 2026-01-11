@@ -56,6 +56,10 @@ class TunService : VpnService() {
         builder.addRoute("0.0.0.0", 0)
         builder.addDnsServer("10.0.0.2")
 
+        // BYPASS THIS APP'S TRAFFIC - prevents routing loops!
+        // This ensures clash app's own traffic doesn't get routed through VPN tunnel
+        builder.addDisallowedApplication(packageName)
+
         vpnInterface = builder.establish()
 
         tunFd = vpnInterface?.fd
