@@ -2,6 +2,7 @@ package rs.clash.android.viewmodel
 
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.VpnService
 import android.util.Log
 import android.widget.Toast
@@ -56,21 +57,25 @@ class HomeViewModel : ViewModel() {
     var totalUpload by mutableStateOf(0L)
         private set
 
+    private val sharedPreferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+        if (key == "profile_path") {
+            val path = sharedPreferences.getString("profile_path", null)
+            profilePath.value = path
+            Global.profilePath = path ?: ""
+            updateClashApi()
+        }
+    }
+
     init {
         val context = Global.application.applicationContext
         val sharedPreferences = context.getSharedPreferences("file_prefs", MODE_PRIVATE)
-        profilePath.value = sharedPreferences.getString("profile_path", null)
-        Global.profilePath = profilePath.value ?: ""
+        val initialPath = sharedPreferences.getString("profile_path", null)
+        profilePath.value = initialPath
+        Global.profilePath = initialPath ?: ""
         
         updateClashApi()
 
-        sharedPreferences.registerOnSharedPreferenceChangeListener { _, key ->
-            if (key == "profile_path") {
-                profilePath.value = sharedPreferences.getString("profile_path", null)
-                Global.profilePath = profilePath.value ?: ""
-                updateClashApi()
-            }
-        }
+        sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
 
         viewModelScope.launch {
             Global.isServiceRunning.collectLatest { running ->
@@ -90,6 +95,12 @@ class HomeViewModel : ViewModel() {
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        val sharedPreferences = Global.application.getSharedPreferences("file_prefs", MODE_PRIVATE)
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
     }
 
     private fun startStatsPolling() {
@@ -221,14 +232,17 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    fun startVpn(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>) {
+    fun startVpn(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>? = null) {
         val app = Global.application
-        tunIntent = VpnService.prepare(app)
-        if (tunIntent != null) {
-            launcher.launch(tunIntent!!)
+        if (Global.profilePath.isEmpty()) {
+            Toast.makeText(app, "Please select a config file first", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val intent = VpnService.prepare(app)
+        if (intent != null) {
+            launcher?.launch(intent)
         } else {
-            tunIntent = TunService::class.intent
-            app.startService(tunIntent!!)
+            app.startService(TunService::class.intent)
         }
     }
 

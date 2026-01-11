@@ -29,7 +29,7 @@ fun ClashApp(modifier: Modifier = Modifier) {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == RESULT_OK) {
             // Permission granted, trigger start again
-            homeViewModel.startVpn(it.run { null }!!) 
+            homeViewModel.startVpn()
         }
     }
 
