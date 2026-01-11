@@ -6,6 +6,9 @@ import android.net.VpnService
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import rs.clash.android.Global
@@ -16,6 +19,8 @@ import rs.clash.android.service.tunService
 class HomeViewModel : ViewModel() {
     var profilePath = MutableLiveData<String?>(null)
     var tunIntent: Intent? = null
+    var isVpnRunning by mutableStateOf(tunService != null)
+        private set
 
     init {
         val context = Global.application.applicationContext
@@ -34,11 +39,11 @@ class HomeViewModel : ViewModel() {
         val app = Global.application
         tunIntent = VpnService.prepare(app)
         if (tunIntent != null) {
-            // 返回非空Intent，说明需要用户授权
             launcher.launch(tunIntent!!)
         } else {
             tunIntent = TunService::class.intent
             app.startService(tunIntent!!)
+            isVpnRunning = true
             Toast.makeText(app, "VPN Started", Toast.LENGTH_SHORT).show()
         }
     }
@@ -46,7 +51,7 @@ class HomeViewModel : ViewModel() {
     fun stopVpn() {
         val app = Global.application
         tunService?.stopVpn()
-
+        isVpnRunning = false
         Toast.makeText(app, "VPN Stopped", Toast.LENGTH_SHORT).show()
     }
 }
