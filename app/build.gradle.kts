@@ -1,8 +1,12 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ktorfit)
 }
 
 val baseVersionName = "0.1.0"
@@ -21,12 +25,12 @@ fun Project.exec(command: String): String =
 
 android {
     namespace = "rs.clash.android"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "rs.clash.android"
-        minSdk = 21
-        targetSdk = 35
+        minSdk = 23
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -50,17 +54,19 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     buildFeatures {
         compose = true
     }
 }
-
+kotlin {
+    jvmToolchain(21)
+}
+ktorfit {
+    compilerPluginVersion.set("2.3.3")
+}
 dependencies {
     implementation(project(":core"))
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -79,9 +85,14 @@ dependencies {
     implementation(libs.compose.destinations.core)
     ksp(libs.compose.destinations.ksp)
 
-    implementation(libs.retrofit.core)
-    implementation(libs.retrofit.gson)
-    implementation(libs.okhttp.core)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+
+    implementation(libs.ktorfit.lib)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.snakeyaml)
 
     testImplementation(libs.junit)

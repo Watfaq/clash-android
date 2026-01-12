@@ -7,25 +7,26 @@ plugins {
 
 android {
     namespace = "rs.clash.android.ffi"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = rootProject.extra["ndkVersion"] as String
     defaultConfig {
-        minSdk = 21
+        minSdk = 23
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
+
     buildFeatures {
         compose = true
     }
+}
 
+kotlin {
+    jvmToolchain(21)
 }
 
 dependencies {

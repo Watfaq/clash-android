@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.cargo.ndk) apply false
     alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.ktorfit) apply false
 }
-val buildToolsVersion by extra("35.0.0")
-val ndkVersion by extra("27.0.12077973")
+val buildToolsVersion by extra("36.0.0")
+val ndkVersion by extra("27.3.13750724")

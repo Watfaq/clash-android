@@ -9,6 +9,8 @@ import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -21,8 +23,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.yaml.snakeyaml.Yaml
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import de.jensklingenberg.ktorfit.Ktorfit
+import io.ktor.client.*
+import io.ktor.client.engine.android.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.json.Json
 import rs.clash.android.*
 import rs.clash.android.service.TunService
 import rs.clash.android.service.tunService
@@ -31,7 +37,6 @@ import java.io.FileInputStream
 
 class HomeViewModel : ViewModel() {
     var profilePath = MutableLiveData<String?>(null)
-    var tunIntent: Intent? = null
     var isVpnRunning by mutableStateOf(tunService != null)
         private set
 
@@ -50,11 +55,11 @@ class HomeViewModel : ViewModel() {
     // Overview data
     var memoryUsage by mutableStateOf<MemoryResponse?>(null)
         private set
-    var connectionCount by mutableStateOf(0)
+    var connectionCount by mutableIntStateOf(0)
         private set
-    var totalDownload by mutableStateOf(0L)
+    var totalDownload by mutableLongStateOf(0L)
         private set
-    var totalUpload by mutableStateOf(0L)
+    var totalUpload by mutableLongStateOf(0L)
         private set
 
     private val sharedPreferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
@@ -113,13 +118,14 @@ class HomeViewModel : ViewModel() {
     }
 
     private suspend fun fetchOverviewStats() {
-        if (clashApi == null || !isVpnRunning) return
+        val api = clashApi
+        if (api == null || !isVpnRunning) return
         try {
-            memoryUsage = clashApi?.getMemory()
-            val connResponse = clashApi?.getConnections()
-            connectionCount = connResponse?.connections?.size ?: 0
-            totalDownload = connResponse?.downloadTotal ?: 0L
-            totalUpload = connResponse?.uploadTotal ?: 0L
+            memoryUsage = api.getMemory()
+            val connResponse = api.getConnections()
+            connectionCount = connResponse.connections.size
+            totalDownload = connResponse.downloadTotal
+            totalUpload = connResponse.uploadTotal
         } catch (e: Exception) {
             Log.e("ClashAPI", "Failed to fetch stats", e)
         }
@@ -134,17 +140,27 @@ class HomeViewModel : ViewModel() {
         }
 
         try {
-            val retrofit = Retrofit.Builder()
+            val httpClient = HttpClient(Android) {
+                install(ContentNegotiation) {
+                    json(Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                    })
+                }
+            }
+
+            val ktorfit = Ktorfit.Builder()
                 .baseUrl("http://$address/")
-                .addConverterFactory(GsonConverterFactory.create())
+                .httpClient(httpClient)
                 .build()
 
-            clashApi = retrofit.create(ClashApi::class.java)
+            // Use the recommended way to create API
+            clashApi = ktorfit.createClashApi()
             if (isVpnRunning) {
                 fetchProxies()
             }
         } catch (e: Exception) {
-            Log.e("ClashAPI", "Failed to create Retrofit", e)
+            Log.e("ClashAPI", "Failed to create Ktorfit", e)
         }
     }
 
@@ -155,7 +171,7 @@ class HomeViewModel : ViewModel() {
             
             val yaml = Yaml()
             val config = yaml.load<Map<String, Any>>(FileInputStream(file))
-            var controller = config["external-controller"] as? String
+            val controller = config["external-controller"] as? String
             if (controller.isNullOrEmpty()) {
                 "127.0.0.1:9090"
             } else {
@@ -173,14 +189,15 @@ class HomeViewModel : ViewModel() {
     }
 
     fun fetchProxies() {
-        if (clashApi == null || !isVpnRunning) return
+        val api = clashApi
+        if (api == null || !isVpnRunning) return
         
         isRefreshing = true
         errorMessage = null
         viewModelScope.launch {
             try {
-                val response = clashApi?.getProxies()
-                proxies = response?.proxies ?: emptyMap()
+                val response = api.getProxies()
+                proxies = response.proxies
                 
                 proxies.forEach { (name, proxy) ->
                     val lastDelay = proxy.history?.lastOrNull()?.delay
@@ -208,23 +225,21 @@ class HomeViewModel : ViewModel() {
     }
 
     suspend fun testProxyDelay(name: String) {
+        val api = clashApi ?: return
         try {
             delays[name] = "testing..."
-            val response = clashApi?.getProxyDelay(name)
-            if (response != null) {
-                delays[name] = "${response.delay}ms"
-            } else {
-                delays[name] = "error"
-            }
+            val response = api.getProxyDelay(name)
+            delays[name] = "${response.delay}ms"
         } catch (e: Exception) {
             delays[name] = "timeout"
         }
     }
 
     fun selectProxy(groupName: String, proxyName: String) {
+        val api = clashApi ?: return
         viewModelScope.launch {
             try {
-                clashApi?.selectProxy(groupName, mapOf("name" to proxyName))
+                api.selectProxy(groupName, mapOf("name" to proxyName))
                 fetchProxies()
             } catch (e: Exception) {
                 Log.e("ClashAPI", "Failed to select proxy", e)

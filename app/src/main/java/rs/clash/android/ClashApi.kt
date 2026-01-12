@@ -1,35 +1,43 @@
 package rs.clash.android
 
-import com.google.gson.annotations.SerializedName
-import retrofit2.http.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+import de.jensklingenberg.ktorfit.http.*
 
+@Serializable
 data class ProxiesResponse(val proxies: Map<String, Proxy>)
 
+@Serializable
 data class Proxy(
     val name: String,
     val type: String,
-    val all: List<String>?,
-    val now: String?,
-    val history: List<DelayHistory>?
+    val all: List<String>? = null,
+    val now: String? = null,
+    val history: List<DelayHistory>? = null
 )
 
+@Serializable
 data class DelayHistory(
     val time: String,
     val delay: Int
 )
 
+@Serializable
 data class DelayResponse(
     val delay: Int
 )
 
+@Serializable
 data class MemoryResponse(val inuse: Long, val oslimit: Long)
 
+@Serializable
 data class ConnectionsResponse(
     val downloadTotal: Long,
     val uploadTotal: Long,
     val connections: List<Connection>
 )
 
+@Serializable
 data class Connection(
     val id: String,
     val metadata: Metadata,
@@ -40,6 +48,7 @@ data class Connection(
     val rule: String
 )
 
+@Serializable
 data class Metadata(
     val network: String,
     val type: String,
@@ -49,10 +58,11 @@ data class Metadata(
     val host: String
 )
 
+@Serializable
 data class ConfigResponse(
-    @SerializedName("external-controller") val externalController: String?,
-    @SerializedName("secret") val secret: String?,
-    @SerializedName("mode") val mode: String?
+    @SerialName("external-controller") val externalController: String? = null,
+    @SerialName("secret") val secret: String? = null,
+    @SerialName("mode") val mode: String? = null
 )
 
 interface ClashApi {
