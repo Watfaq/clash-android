@@ -1,10 +1,10 @@
 use std::{
     net::Ipv4Addr,
-    sync::{LazyLock, Once, OnceLock},
+    sync::{LazyLock, Once, OnceLock}, thread::spawn,
 };
 
 use clash_lib::{
-    Config, config::config::Controller, start
+    Config, config::{config::Controller, def::LogLevel}, start
 };
 
 use log::init_logger;
@@ -86,6 +86,7 @@ async fn init_main(
     work_dir: String,
     over: ProfileOverride,
 ) -> Result<(), FfiError> {
+    std::env::set_current_dir(&work_dir)?;
     let mut config = Config::File(config_path.clone()).try_parse()?;
     config.tun = TunConfig {
         enable: true,
@@ -100,10 +101,16 @@ async fn init_main(
         dns_hijack: true,
     };
 
+    // Disable optional geo data features that may cause hanging on Android
+    config.general.geosite = Some("geosite.dat".to_string());
+    config.general.mmdb = Some("Country.mmdb".to_string());
+    config.general.asn_mmdb = None;
+    
     config.general.controller = Controller {
-        external_controller: Some("127.0.0.1:9090".to_string()),
+        external_controller_ipc: Some(format!("/data/user/0/rs.clash.android/cache/clash.sock")),
         ..Default::default()
     };
+    config.general.log_level = LogLevel::Trace;
     // Note: DNS and general config would need to be updated based on the actual API
     // For now, keeping minimal changes to allow compilation
     unsafe {
@@ -112,9 +119,30 @@ async fn init_main(
     }
     static INIT: Once = Once::new();
     INIT.call_once(|| {
+        // Setup panic hook to capture panics on Android
+        std::panic::set_hook(Box::new(|panic_info| {
+            let payload = panic_info.payload();
+            let message = if let Some(s) = payload.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = payload.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic payload".to_string()
+            };
+            
+            let location = if let Some(loc) = panic_info.location() {
+                format!("{}:{}:{}", loc.file(), loc.line(), loc.column())
+            } else {
+                "Unknown location".to_string()
+            };
+            
+            error!("PANIC caught: {} at {}", message, location);
+            error!("Backtrace:\n{}", std::backtrace::Backtrace::force_capture());
+        }));
+        
         init_logger(config.general.log_level.into());
         // color_eyre::install().unwrap();
-        tracing::info!("Init logger");
+        tracing::info!("Init logger and panic hook");
     });
     info!(
         "Config path: {config_path}\n\tTUN fd: {}\n\tLog file path: {}",
@@ -127,10 +155,21 @@ async fn init_main(
     let _: JoinHandle<eyre::Result<()>> = RT.spawn(async {
         let (log_tx, _) = broadcast::channel(100);
         info!("Starting clash-rs");
-        // start(config, work_dir, log_tx).await.unwrap();
-        if let Err(err) = start(config, work_dir, log_tx).await {
-            error!("{:#}", eyre::eyre!(err));
+
+        // Add timeout to prevent hanging on Android (60 seconds)
+        let start_future = start(config, work_dir, log_tx);
+        match tokio::time::timeout(std::time::Duration::from_secs(10), start_future).await {
+            Ok(Ok(_)) => {
+                info!("clash-rs started successfully");
+            }
+            Ok(Err(err)) => {
+                error!("clash-rs start error: {:#}", eyre::eyre!(err));
+            }
+            Err(_) => {
+                error!("clash-rs start timeout after 60 seconds - likely hanging on initialization");
+            }
         }
+        info!("Starting clash-rs end");
         Ok(())
     });
     Ok(())

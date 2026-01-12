@@ -7,7 +7,7 @@ pub(crate) fn init_logger(level: LevelFilter) {
         .add_directive(format!("clash={}", level).parse().unwrap())
         .add_directive(format!("clash_lib={}", level).parse().unwrap())
         .add_directive(format!("clash_android_ffi={}", level).parse().unwrap())
-        .add_directive("warn".parse().unwrap());
+        .add_directive("trace".parse().unwrap());
 
     let registry = tracing_subscriber::registry().with(filter);
 

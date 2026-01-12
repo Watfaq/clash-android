@@ -22,6 +22,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.viewmodel.ProfileViewModel
+import androidx.core.content.edit
 
 @Composable
 @Destination<RootGraph>()
@@ -56,7 +57,7 @@ fun ProfileScreen(
             Text(text = "Path: $file")
             Button(onClick = {
                 val filePath = vm.saveFileToAppDirectory(context, file)
-                sharedPreferences.edit().putString("profile_path", filePath).apply()
+                sharedPreferences.edit { putString("profile_path", filePath) }
                 savedFilePath = filePath
             }) {
                 Text(text = "Save File")

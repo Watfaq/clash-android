@@ -31,8 +31,8 @@ android {
         applicationId = "rs.clash.android"
         minSdk = 23
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = verCode
+        versionName = verName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -86,14 +86,13 @@ dependencies {
     ksp(libs.compose.destinations.ksp)
 
     implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
 
-
     implementation(libs.ktorfit.lib)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.snakeyaml)
+    implementation(libs.kaml)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

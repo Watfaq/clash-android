@@ -3,6 +3,8 @@ package rs.clash.android.viewmodel
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.LocalSocket
+import android.net.LocalSocketAddress
 import android.net.VpnService
 import android.util.Log
 import android.widget.Toast
@@ -22,18 +24,19 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.yaml.snakeyaml.Yaml
 import de.jensklingenberg.ktorfit.Ktorfit
 import io.ktor.client.*
-import io.ktor.client.engine.android.*
+import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
 import rs.clash.android.*
 import rs.clash.android.service.TunService
 import rs.clash.android.service.tunService
 import java.io.File
-import java.io.FileInputStream
+import java.net.InetAddress
+import java.net.Socket
 
 class HomeViewModel : ViewModel() {
     var profilePath = MutableLiveData<String?>(null)
@@ -132,15 +135,34 @@ class HomeViewModel : ViewModel() {
     }
 
     private fun updateClashApi() {
-        val path = profilePath.value
-        val address = if (!path.isNullOrEmpty()) {
-            resolveExternalController(path)
-        } else {
-            "127.0.0.1:9090"
-        }
+        val socketPath = File("/data/user/0/rs.clash.android/cache/clash.sock").absolutePath
 
         try {
-            val httpClient = HttpClient(Android) {
+            val okHttpClient = OkHttpClient.Builder()
+                .socketFactory(object : javax.net.SocketFactory() {
+                    override fun createSocket(): Socket {
+                        return object : Socket() {
+                            val localSocket = LocalSocket()
+                            override fun connect(endpoint: java.net.SocketAddress?, timeout: Int) {
+                                localSocket.connect(LocalSocketAddress(socketPath, LocalSocketAddress.Namespace.FILESYSTEM))
+                            }
+                            override fun getInputStream() = localSocket.inputStream
+                            override fun getOutputStream() = localSocket.outputStream
+                            override fun isConnected() = localSocket.isConnected
+                            override fun close() = localSocket.close()
+                        }
+                    }
+                    override fun createSocket(host: String?, port: Int) = createSocket()
+                    override fun createSocket(host: String?, port: Int, localHost: InetAddress?, localPort: Int) = createSocket()
+                    override fun createSocket(host: InetAddress?, port: Int) = createSocket()
+                    override fun createSocket(address: InetAddress?, port: Int, localAddress: InetAddress?, localPort: Int) = createSocket()
+                })
+                .build()
+
+            val httpClient = HttpClient(OkHttp) {
+                engine {
+                    preconfigured = okHttpClient
+                }
                 install(ContentNegotiation) {
                     json(Json {
                         ignoreUnknownKeys = true
@@ -150,41 +172,16 @@ class HomeViewModel : ViewModel() {
             }
 
             val ktorfit = Ktorfit.Builder()
-                .baseUrl("http://$address/")
+                .baseUrl("http://localhost/")
                 .httpClient(httpClient)
                 .build()
 
-            // Use the recommended way to create API
             clashApi = ktorfit.createClashApi()
             if (isVpnRunning) {
                 fetchProxies()
             }
         } catch (e: Exception) {
             Log.e("ClashAPI", "Failed to create Ktorfit", e)
-        }
-    }
-
-    private fun resolveExternalController(path: String): String {
-        return try {
-            val file = File(path)
-            if (!file.exists()) return "127.0.0.1:9090"
-            
-            val yaml = Yaml()
-            val config = yaml.load<Map<String, Any>>(FileInputStream(file))
-            val controller = config["external-controller"] as? String
-            if (controller.isNullOrEmpty()) {
-                "127.0.0.1:9090"
-            } else {
-                if (controller.startsWith(":")) {
-                    "127.0.0.1$controller"
-                } else if (controller.startsWith("0.0.0.0")) {
-                    controller.replace("0.0.0.0", "127.0.0.1")
-                } else {
-                    controller
-                }
-            }
-        } catch (e: Exception) {
-            "127.0.0.1:9090"
         }
     }
 
