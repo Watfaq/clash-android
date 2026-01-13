@@ -1,0 +1,7 @@
+{
+    "rust-analyzer.cargo.target": "aarch64-linux-android",
+    "rust-analyzer.check.allTargets": false,
+    "rust-analyzer.server.extraEnv": {
+        "CARGO_BUILD_TARGET": "aarch64-linux-android"
+    }
+}

@@ -17,6 +17,7 @@ use tracing::{error, info};
 
 use clash_lib::config::internal::config::TunConfig;
 
+pub mod controller;
 pub mod log;
 
 pub static RT: LazyLock<Runtime> = LazyLock::new(|| {
@@ -84,7 +85,7 @@ impl std::fmt::Display for FfiError {
     }
 }
 
-#[uniffi::export]
+#[uniffi::export(async_runtime = "tokio")]
 async fn init_main(
     config_path: String,
     work_dir: String,
@@ -159,10 +160,7 @@ async fn init_main(
             error!("Backtrace:\n{}", std::backtrace::Backtrace::force_capture());
         }));
 
-        init_logger(
-            config.general.log_level.into(),
-            Some(over.log_file_path.clone()),
-        );
+        init_logger(config.general.log_level.into(), None);
         // color_eyre::install().unwrap();
         tracing::info!("Init logger and panic hook");
     });

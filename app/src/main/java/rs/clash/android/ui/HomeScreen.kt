@@ -24,9 +24,13 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
-import rs.clash.android.Proxy
 import rs.clash.android.viewmodel.HomeViewModel
 import java.util.*
+import kotlin.math.log10
+import kotlin.math.pow
+import uniffi.clash_android_ffi.Proxy
+import kotlin.text.format
+
 
 @Destination<RootGraph>(start = true)
 @Composable
@@ -112,14 +116,14 @@ fun ProxyTab(viewModel: HomeViewModel) {
                 Text(text = "No proxy groups found. Is VPN running?")
             }
         } else {
-            val proxyTypes = remember(proxies) { proxies.mapValues { it.value.type } }
+            val proxyTypes = remember(proxies) { proxies.mapValues { it.value.proxyType } }
             
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                val groups = proxies.filter { it.value.all != null }
+                val groups = proxies.filter { it.value.all.isNotEmpty() }
                 items(groups.toList()) { (name, proxy) ->
                     ProxyGroupWidget(
                         name = name,
@@ -130,7 +134,7 @@ fun ProxyTab(viewModel: HomeViewModel) {
                             viewModel.selectProxy(name, selectedName)
                         },
                         onTestDelay = {
-                            proxy.all?.let { viewModel.testGroupDelay(it) }
+                            viewModel.testGroupDelay(proxy.all)
                         }
                     )
                 }
@@ -204,8 +208,8 @@ fun StatsCard(
 fun formatSize(size: Long): String {
     if (size <= 0) return "0 B"
     val units = arrayOf("B", "KB", "MB", "GB", "TB")
-    val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
-    return String.format("%.2f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
+    val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
+    return String.format(Locale.US, "%.2f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
 }
 
 @Composable
@@ -261,7 +265,7 @@ fun ProxyGroupWidget(
                 }
             }
 
-            if (expanded && proxy.all != null) {
+            if (expanded && proxy.all.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider()
                 

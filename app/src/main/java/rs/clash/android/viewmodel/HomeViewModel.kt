@@ -8,6 +8,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
+import androidx.collection.mutableIntLongMapOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -22,15 +23,13 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import de.jensklingenberg.ktorfit.Ktorfit
-import io.ktor.client.*
-import io.ktor.client.engine.okhttp.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.Json
 import rs.clash.android.*
 import rs.clash.android.service.TunService
 import rs.clash.android.service.tunService
+import uniffi.clash_android_ffi.ClashController
+import uniffi.clash_android_ffi.Proxy
+import uniffi.clash_android_ffi.MemoryResponse
+
 import java.io.File
 
 class HomeViewModel : ViewModel() {
@@ -40,14 +39,14 @@ class HomeViewModel : ViewModel() {
 
     var proxies by mutableStateOf<Map<String, Proxy>>(emptyMap())
         private set
-    
+
+    private val controller by lazy { ClashController("${Global.application.cacheDir}/clash.sock") }
     var isRefreshing by mutableStateOf(false)
         private set
     
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
-    private var clashApi: ClashApi? = null
     val delays = mutableStateMapOf<String, String>()
 
     // Overview data
@@ -55,9 +54,9 @@ class HomeViewModel : ViewModel() {
         private set
     var connectionCount by mutableIntStateOf(0)
         private set
-    var totalDownload by mutableLongStateOf(0L)
+    var totalDownload by mutableLongStateOf(0)
         private set
-    var totalUpload by mutableLongStateOf(0L)
+    var totalUpload  by mutableLongStateOf(0)
         private set
 
     private val sharedPreferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
@@ -65,7 +64,6 @@ class HomeViewModel : ViewModel() {
             val path = sharedPreferences.getString("profile_path", null)
             profilePath.value = path
             Global.profilePath = path ?: ""
-            updateClashApi()
         }
     }
 
@@ -75,8 +73,6 @@ class HomeViewModel : ViewModel() {
         val initialPath = sharedPreferences.getString("profile_path", null)
         profilePath.value = initialPath
         Global.profilePath = initialPath ?: ""
-        
-        updateClashApi()
 
         sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
 
@@ -93,8 +89,8 @@ class HomeViewModel : ViewModel() {
                     errorMessage = null
                     memoryUsage = null
                     connectionCount = 0
-                    totalDownload = 0L
-                    totalUpload = 0L
+                    totalDownload = 0
+                    totalUpload = 0
                 }
             }
         }
@@ -116,11 +112,10 @@ class HomeViewModel : ViewModel() {
     }
 
     private suspend fun fetchOverviewStats() {
-        val api = clashApi
-        if (api == null || !isVpnRunning) return
+        if (!isVpnRunning) return
         try {
-            memoryUsage = api.getMemory()
-            val connResponse = api.getConnections()
+            memoryUsage = controller.getMemory()
+            val connResponse = controller.getConnections()
             connectionCount = connResponse.connections.size
             totalDownload = connResponse.downloadTotal
             totalUpload = connResponse.uploadTotal
@@ -128,58 +123,23 @@ class HomeViewModel : ViewModel() {
             Log.e("ClashAPI", "Failed to fetch stats", e)
         }
     }
-
-    private fun updateClashApi() {
-        val socketPath = File("${Global.application.cacheDir}/clash.sock").absolutePath
-
-        try {
-            val okHttpClient = createUnixDomainSocketOkHttpClient(socketPath)
-
-            val httpClient = HttpClient(OkHttp) {
-                engine {
-                    preconfigured = okHttpClient
-                }
-                install(ContentNegotiation) {
-                    json(Json {
-                        ignoreUnknownKeys = true
-                        isLenient = true
-                    })
-                }
-
-            }
-
-            val ktorfit = Ktorfit.Builder()
-
-                .baseUrl("http://localhost/")
-                .httpClient(httpClient)
-                .build()
-
-            clashApi = ktorfit.createClashApi()
-            if (isVpnRunning) {
-                fetchProxies()
-            }
-        } catch (e: Exception) {
-            Log.e("ClashAPI", "Failed to create Ktorfit", e)
-        }
-    }
-
+    
     fun fetchProxies() {
-        val api = clashApi
-        if (api == null || !isVpnRunning) return
+        if (!isVpnRunning) return
         
         isRefreshing = true
         errorMessage = null
         viewModelScope.launch {
             try {
-                val response = api.getProxies()
-                proxies = response.proxies
-                
+                val proxies = controller.getProxies()
+
                 proxies.forEach { (name, proxy) ->
-                    val lastDelay = proxy.history?.lastOrNull()?.delay
+                    val lastDelay = proxy.history.lastOrNull()?.delay
                     if (lastDelay != null && lastDelay > 0) {
                         delays[name] = "${lastDelay}ms"
                     }
                 }
+                this@HomeViewModel.proxies = proxies
             } catch (e: Exception) {
                 Log.e("ClashAPI", "Failed to fetch proxies", e)
                 errorMessage = "API Error: ${e.message}"
@@ -200,10 +160,10 @@ class HomeViewModel : ViewModel() {
     }
 
     suspend fun testProxyDelay(name: String) {
-        val api = clashApi ?: return
+
         try {
             delays[name] = "testing..."
-            val response = api.getProxyDelay(name)
+            val response = controller.getProxyDelay(name, null, null)
             delays[name] = "${response.delay}ms"
         } catch (e: Exception) {
             delays[name] = "timeout"
@@ -211,10 +171,10 @@ class HomeViewModel : ViewModel() {
     }
 
     fun selectProxy(groupName: String, proxyName: String) {
-        val api = clashApi ?: return
+
         viewModelScope.launch {
             try {
-                api.selectProxy(groupName, ProxySelect(proxyName))
+                controller.selectProxy(groupName, proxyName)
                 fetchProxies()
             } catch (e: Exception) {
                 Log.e("ClashAPI", "Failed to select proxy", e)

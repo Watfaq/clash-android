@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ktorfit)
 }
 
 val baseVersionName = "0.1.0"
@@ -64,9 +63,7 @@ android {
 kotlin {
     jvmToolchain(21)
 }
-ktorfit {
-    compilerPluginVersion.set("2.3.3")
-}
+
 dependencies {
     implementation(project(":core"))
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -85,13 +82,6 @@ dependencies {
     implementation(libs.compose.destinations.core)
     ksp(libs.compose.destinations.ksp)
 
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.okhttp)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.kotlinx.json)
-
-    implementation(libs.ktorfit.lib)
-    implementation(libs.kotlinx.serialization.json)
     implementation(libs.kaml)
 
     testImplementation(libs.junit)

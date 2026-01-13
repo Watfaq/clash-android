@@ -48,12 +48,6 @@ androidx-material-icons-extended = { module = "androidx.compose.material:materia
 compose-destinations-core = { group = "io.github.raamcosta.compose-destinations", name="core", version.ref = "composeDestinations" }
 compose-destinations-ksp = { group = "io.github.raamcosta.compose-destinations", name="ksp", version.ref = "composeDestinations" }
 
-ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
-ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
-ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
-ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
-ktorfit-lib = { group = "de.jensklingenberg.ktorfit", name = "ktorfit-lib-light", version.ref = "ktorfit" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 kaml = { group = "com.charleskorn.kaml", name = "kaml", version.ref = "kaml" }
 
@@ -65,4 +59,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 cargo-ndk = { id = "com.github.willir.rust.cargo-ndk-android", version.ref = "cargo-ndk" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp-plugin" }
-ktorfit = { id = "de.jensklingenberg.ktorfit", version.ref = "ktorfit" }
+
