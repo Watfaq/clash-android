@@ -16,14 +16,14 @@ thiserror = "2"
 tokio = "1"
 
 tracing = "0.1"
+time = { version = "0.3", features = ["macros", "local-offset"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt"]}
 paranoid-android = "0.2"
 color-eyre = "0.6"
 
 clash-lib = { package = "clash-lib", path = "../../../clash-rs/clash-lib", features = [
     "tuic", 
-    "internal",
-    "shadowquic",
+    #"shadowquic",
     "shadowsocks",
     "tun",
     "wireguard",
@@ -37,4 +37,4 @@ uniffi = { workspace = true, features = ["build"] }
 
 [lib]
 crate-type = ["cdylib", "lib"]
-# name = "uniffi_callbacks"
+

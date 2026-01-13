@@ -52,6 +52,10 @@ cargoNdk {
 
 android {
     buildToolsVersion = rootProject.extra["buildToolsVersion"] as String
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
     libraryVariants.all {
         val variant = this
         val bDir = layout.projectDirectory.dir("src/main/java")

@@ -1,10 +1,14 @@
-use std::{
-    net::Ipv4Addr,
-    sync::{LazyLock, Once, OnceLock}, thread::spawn,
-};
+use clash_lib::app::dns;
 
+use clash_lib::app::dns::config::DNSListenAddr;
 use clash_lib::{
-    Config, config::{config::Controller, def::LogLevel}, start
+    Config,
+    config::{config::Controller, def::LogLevel},
+    start,
+};
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    sync::{LazyLock, Once, OnceLock},
 };
 
 use log::init_logger;
@@ -101,18 +105,33 @@ async fn init_main(
         dns_hijack: true,
     };
 
-    // Disable optional geo data features that may cause hanging on Android
     config.general.geosite = Some("geosite.dat".to_string());
     config.general.mmdb = Some("Country.mmdb".to_string());
     config.general.asn_mmdb = None;
-    
+
     config.general.controller = Controller {
-        external_controller_ipc: Some(format!("/data/user/0/rs.clash.android/cache/clash.sock")),
+        external_controller_ipc: Some(format!("{work_dir}/clash.sock")),
         ..Default::default()
     };
-    config.general.log_level = LogLevel::Trace;
-    // Note: DNS and general config would need to be updated based on the actual API
-    // For now, keeping minimal changes to allow compilation
+
+    config.dns = dns::Config {
+        enable: true,
+
+        listen: DNSListenAddr {
+            udp: Some(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 2)), 53)),
+
+            ..config.dns.listen
+        },
+        nameserver: dns::Config::parse_nameserver(&["114.114.114.114".into()]).unwrap(),
+
+        ..config.dns
+    };
+
+    #[cfg(debug_assertions)]
+    {
+        config.general.log_level = LogLevel::Debug;
+    }
+
     unsafe {
         std::env::set_var("RUST_BACKTRACE", "1");
         std::env::set_var("NO_COLOR", "1");
@@ -129,18 +148,21 @@ async fn init_main(
             } else {
                 "Unknown panic payload".to_string()
             };
-            
+
             let location = if let Some(loc) = panic_info.location() {
                 format!("{}:{}:{}", loc.file(), loc.line(), loc.column())
             } else {
                 "Unknown location".to_string()
             };
-            
+
             error!("PANIC caught: {} at {}", message, location);
             error!("Backtrace:\n{}", std::backtrace::Backtrace::force_capture());
         }));
-        
-        init_logger(config.general.log_level.into());
+
+        init_logger(
+            config.general.log_level.into(),
+            Some(over.log_file_path.clone()),
+        );
         // color_eyre::install().unwrap();
         tracing::info!("Init logger and panic hook");
     });
@@ -149,27 +171,14 @@ async fn init_main(
         over.tun_fd, over.log_file_path
     );
 
-    // Socket protector functionality removed for now due to API changes
-    // TODO: Re-implement socket protector based on new API
-
     let _: JoinHandle<eyre::Result<()>> = RT.spawn(async {
         let (log_tx, _) = broadcast::channel(100);
         info!("Starting clash-rs");
-
-        // Add timeout to prevent hanging on Android (60 seconds)
-        let start_future = start(config, work_dir, log_tx);
-        match tokio::time::timeout(std::time::Duration::from_secs(10), start_future).await {
-            Ok(Ok(_)) => {
-                info!("clash-rs started successfully");
-            }
-            Ok(Err(err)) => {
-                error!("clash-rs start error: {:#}", eyre::eyre!(err));
-            }
-            Err(_) => {
-                error!("clash-rs start timeout after 60 seconds - likely hanging on initialization");
-            }
+        if let Err(err) = start(config, work_dir, log_tx).await {
+            error!("clash-rs start error: {:#}", eyre::eyre!(err));
         }
-        info!("Starting clash-rs end");
+
+        info!("Quitting clash-rs");
         Ok(())
     });
     Ok(())
@@ -180,4 +189,3 @@ fn shutdown() {
     info!("clashrs shutdown");
 }
 uniffi::setup_scaffolding!("clash_android_ffi");
-

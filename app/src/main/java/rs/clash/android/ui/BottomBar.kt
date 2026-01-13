@@ -2,6 +2,7 @@ package rs.clash.android.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.automirrored.outlined.TextSnippet
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Icon
@@ -16,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.LogsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
@@ -28,6 +30,7 @@ enum class BottomBarItem(
     @StringRes val label: Int,
 ) {
     Home(HomeScreenDestination, Icons.Outlined.Home, R.string.home_screen),
+    Logs(LogsScreenDestination, Icons.AutoMirrored.Outlined.List, R.string.logs_screen),
     Profile(ProfileScreenDestination, Icons.AutoMirrored.Outlined.TextSnippet, R.string.profile_screen),
 }
 

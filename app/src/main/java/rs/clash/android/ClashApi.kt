@@ -65,12 +65,16 @@ data class ConfigResponse(
     @SerialName("mode") val mode: String? = null
 )
 
+@Serializable
+data class ProxySelect(@SerialName("name") val name: String? = null)
+
 interface ClashApi {
     @GET("proxies")
     suspend fun getProxies(): ProxiesResponse
 
     @PUT("proxies/{name}")
-    suspend fun selectProxy(@Path("name") groupName: String, @Body body: Map<String, String>)
+    @Headers("Content-Type: application/json")
+    suspend fun selectProxy(@Path("name") groupName: String, @Body proxy: ProxySelect)
 
     @GET("proxies/{name}/delay")
     suspend fun getProxyDelay(

@@ -12,3 +12,10 @@ edition = "2024"
 
 [workspace.dependencies]
 uniffi = { version = "0.30", features = ["tokio"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
