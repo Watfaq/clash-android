@@ -23,7 +23,7 @@ color-eyre = "0.6"
 
 clash-lib = { package = "clash-lib", path = "../../../clash-rs/clash-lib", features = [
     "tuic", 
-    #"shadowquic",
+    "shadowquic",
     "shadowsocks",
     "tun",
     "wireguard",
