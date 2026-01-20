@@ -58,8 +58,9 @@ android {
     }
     libraryVariants.all {
         val variant = this
+        val variantName = variant.name.replaceFirstChar(Char::titlecase)
         val bDir = layout.projectDirectory.dir("src/main/java")
-        val generateBindings = tasks.register("generate${variant.name.replaceFirstChar(Char::titlecase)}UniFFIBindings", Exec::class) {
+        val generateBindings = tasks.register("generate${variantName}UniFFIBindings", Exec::class) {
             workingDir = file("../uniffi")
             commandLine(
                 "cargo", "run", "-p", "uniffi-bindgen", "generate",
@@ -67,14 +68,14 @@ android {
                 "--language", "kotlin",
                 "--out-dir", bDir.asFile.absolutePath
             )
-            dependsOn("buildCargoNdk${variant.name.replaceFirstChar(Char::titlecase)}")
+            dependsOn("buildCargoNdk${variantName}")
         }
 
         // Make Java compilation depend on generating UniFFI bindings
         variant.javaCompileProvider.get().dependsOn(generateBindings)
 
         // Also hook into Kotlin compilation
-        tasks.named("compile${variant.name.replaceFirstChar(Char::titlecase)}Kotlin").configure {
+        tasks.named("compile${variantName}Kotlin").configure {
             dependsOn(generateBindings)
         }
 
