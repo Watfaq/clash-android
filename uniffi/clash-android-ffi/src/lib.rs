@@ -1,6 +1,6 @@
 use clash_lib::app::dns;
 
-use clash_lib::app::dns::config::DNSListenAddr;
+use clash_lib::app::dns::config::{DNSListenAddr, DNSNetMode, NameServer};
 use clash_lib::{
     Config,
     config::{config::Controller, def::LogLevel},
@@ -115,15 +115,28 @@ async fn init_main(
         ..Default::default()
     };
 
+    let nameserver = if config.dns.nameserver.is_empty() {
+        vec![NameServer {
+            net: DNSNetMode::DoT,
+            address: "dns.alidns.com:853".to_string(),
+            interface: None,
+            proxy: None,
+        }]
+    } else {
+        config.dns.nameserver.clone()
+    };
     config.dns = dns::Config {
         enable: true,
 
         listen: DNSListenAddr {
-            udp: Some(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 2)), 53553)),
+            udp: Some(SocketAddr::new(
+                IpAddr::V4(Ipv4Addr::new(10, 0, 0, 2)),
+                53553,
+            )),
 
             ..config.dns.listen
         },
-        nameserver: dns::Config::parse_nameserver(&["114.114.114.114".into()]).unwrap(),
+        nameserver,
 
         ..config.dns
     };
