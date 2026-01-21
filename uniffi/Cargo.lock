@@ -774,7 +774,6 @@ dependencies = [
  "paranoid-android",
  "serde",
  "serde_json",
- "thiserror 2.0.17",
  "time",
  "tokio",
  "tracing",

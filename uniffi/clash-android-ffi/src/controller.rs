@@ -1,3 +1,4 @@
+use eyre::Context;
 use http_body_util::{BodyExt, Full};
 use hyper::Request;
 use hyper::body::Bytes;
@@ -10,6 +11,8 @@ use urlencoding::encode;
 
 #[cfg(unix)]
 use hyperlocal::{UnixConnector, Uri as UnixUri};
+
+use crate::EyreError;
 
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct Proxy {
@@ -87,11 +90,6 @@ struct ProxiesResponse {
     pub proxies: HashMap<String, Proxy>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct ProxySelect {
-    pub name: String,
-}
-
 /// Clash HTTP API client using Unix domain socket
 #[derive(uniffi::Object)]
 pub struct ClashController {
@@ -106,7 +104,7 @@ impl ClashController {
     }
 
     /// Get all proxies
-    pub async fn get_proxies(&self) -> Result<HashMap<String, Proxy>, HttpError> {
+    pub async fn get_proxies(&self) -> Result<HashMap<String, Proxy>, EyreError> {
         let response: ProxiesResponse = self.request("GET", "/proxies", None).await?;
         Ok(response.proxies)
     }
@@ -116,13 +114,15 @@ impl ClashController {
         &self,
         group_name: String,
         proxy_name: String,
-    ) -> Result<(), HttpError> {
-        let body = ProxySelect { name: proxy_name };
-        let body_bytes =
-            serde_json::to_vec(&body).map_err(|e| HttpError::ClientError(e.to_string()))?;
+    ) -> Result<(), EyreError> {
+        let body = serde_json::json!(
+            {
+                "name": proxy_name
+            }
+        );
 
         let path = format!("/proxies/{}", encode(&group_name));
-        self.request_no_response("PUT", &path, Some(body_bytes))
+        self.request_no_response("PUT", &path, Some(serde_json::to_vec(&body)?))
             .await
     }
 
@@ -132,7 +132,7 @@ impl ClashController {
         name: String,
         url: Option<String>,
         timeout: Option<i32>,
-    ) -> Result<DelayResponse, HttpError> {
+    ) -> Result<DelayResponse, EyreError> {
         let test_url = url.unwrap_or_else(|| "http://www.gstatic.com/generate_204".to_string());
         let timeout_ms = timeout.unwrap_or(5000);
 
@@ -146,24 +146,23 @@ impl ClashController {
     }
 
     /// Get memory statistics
-    pub async fn get_memory(&self) -> Result<MemoryResponse, HttpError> {
+    pub async fn get_memory(&self) -> Result<MemoryResponse, EyreError> {
         self.request("GET", "/memory", None).await
     }
 
     /// Get active connections
-    pub async fn get_connections(&self) -> Result<ConnectionsResponse, HttpError> {
+    pub async fn get_connections(&self) -> Result<ConnectionsResponse, EyreError> {
         self.request("GET", "/connections", None).await
     }
 
     /// Get current configuration
-    pub async fn get_configs(&self) -> Result<ConfigResponse, HttpError> {
+    pub async fn get_configs(&self) -> Result<ConfigResponse, EyreError> {
         self.request("GET", "/configs", None).await
     }
 
     /// Update configuration
-    pub async fn update_config(&self, config: HashMap<String, String>) -> Result<(), HttpError> {
-        let body_bytes =
-            serde_json::to_vec(&config).map_err(|e| HttpError::ClientError(e.to_string()))?;
+    pub async fn update_config(&self, config: HashMap<String, String>) -> Result<(), EyreError> {
+        let body_bytes = serde_json::to_vec(&config).wrap_err("Failed to serialize config")?;
 
         self.request_no_response("PATCH", "/configs", Some(body_bytes))
             .await
@@ -176,7 +175,7 @@ impl ClashController {
         method: &str,
         path: &str,
         body: Option<Vec<u8>>,
-    ) -> Result<(), HttpError> {
+    ) -> Result<(), EyreError> {
         let client = Client::builder(TokioExecutor::new()).build(UnixConnector);
         let uri: hyper::Uri = UnixUri::new(&self.socket_path, path).into();
 
@@ -188,20 +187,20 @@ impl ClashController {
         let request = if let Some(body_data) = body {
             request_builder
                 .body(Full::new(Bytes::from(body_data)))
-                .map_err(|e| HttpError::RequestFailed(e.to_string()))?
+                .wrap_err("Failed to build request with body")?
         } else {
             request_builder
                 .body(Full::new(Bytes::new()))
-                .map_err(|e| HttpError::RequestFailed(e.to_string()))?
+                .wrap_err("Failed to build request")?
         };
 
         let response = client
             .request(request)
             .await
-            .map_err(|e| HttpError::RequestFailed(e.to_string()))?;
+            .wrap_err("HTTP request failed")?;
 
         if !response.status().is_success() {
-            return Err(HttpError::StatusError(response.status().as_u16() as i32));
+            return Err(eyre::eyre!("HTTP status error: {}", response.status()).into());
         }
 
         Ok(())
@@ -211,7 +210,7 @@ impl ClashController {
         method: &str,
         path: &str,
         body: Option<Vec<u8>>,
-    ) -> Result<T, HttpError>
+    ) -> Result<T, EyreError>
     where
         T: serde::de::DeserializeOwned,
     {
@@ -226,49 +225,36 @@ impl ClashController {
         let request = if let Some(body_data) = body {
             request_builder
                 .body(Full::new(Bytes::from(body_data)))
-                .map_err(|e| HttpError::RequestFailed(e.to_string()))?
+                .wrap_err("Failed to build request with body")?
         } else {
             request_builder
                 .body(Full::new(Bytes::new()))
-                .map_err(|e| HttpError::RequestFailed(e.to_string()))?
+                .wrap_err("Failed to build request")?
         };
 
         let response = client
             .request(request)
             .await
-            .map_err(|e| HttpError::RequestFailed(e.to_string()))?;
+            .wrap_err("HTTP request failed")?;
 
         if !response.status().is_success() {
-            return Err(HttpError::StatusError(response.status().as_u16() as i32));
+            return Err(eyre::eyre!("HTTP status error: {}", response.status()).into());
         }
 
         let body_bytes = response
             .into_body()
             .collect()
             .await
-            .map_err(|e| HttpError::RequestFailed(e.to_string()))?
+            .wrap_err("Failed to read response body")?
             .to_bytes();
 
-        serde_json::from_slice(&body_bytes).map_err(|e| {
-            HttpError::ParseError(format!("{e}{}", String::from_utf8_lossy(&body_bytes)))
-        })
+        serde_json::from_slice(&body_bytes)
+            .wrap_err_with(|| {
+                format!(
+                    "Failed to parse JSON response: {}",
+                    String::from_utf8_lossy(&body_bytes)
+                )
+            })
+            .map_err(Into::into)
     }
-}
-
-#[derive(Debug, thiserror::Error, uniffi::Error)]
-pub enum HttpError {
-    #[error("Request failed: {0}")]
-    RequestFailed(String),
-
-    #[error("HTTP status error: {0}")]
-    StatusError(i32),
-
-    #[error("Failed to parse response: {0}")]
-    ParseError(String),
-
-    #[error("Client error: {0}")]
-    ClientError(String),
-
-    #[error("Not supported: {0}")]
-    NotSupported(String),
 }

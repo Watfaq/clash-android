@@ -39,35 +39,16 @@ pub struct ProfileOverride {
     pub some_flag: bool,
 }
 
-#[derive(uniffi::Error, Debug)]
-#[uniffi(flat_error)]
-pub enum FfiError {
-    Common(eyre::Report),
-}
-
-impl<E> From<E> for FfiError
-where
-    E: std::error::Error + Send + Sync + 'static,
-{
-    fn from(value: E) -> Self {
-        Self::Common(eyre::Report::new(value))
-    }
-}
-
-impl std::fmt::Display for FfiError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FfiError::Common(report) => report.fmt(f),
-        }
-    }
-}
+type EyreError = eyre::Report;
+#[uniffi::remote(Object)]
+pub struct EyreError;
 
 #[uniffi::export(async_runtime = "tokio")]
 async fn init_main(
     config_path: String,
     work_dir: String,
     over: ProfileOverride,
-) -> Result<(), FfiError> {
+) -> Result<(), EyreError> {
     std::env::set_current_dir(&work_dir)?;
     let mut config = Config::File(config_path.clone()).try_parse()?;
     config.tun = TunConfig {
