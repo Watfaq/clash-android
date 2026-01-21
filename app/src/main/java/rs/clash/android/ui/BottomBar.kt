@@ -3,7 +3,9 @@ package rs.clash.android.ui
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.TextSnippet
+import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -16,7 +18,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.PanelScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
 import com.ramcosta.composedestinations.spec.DirectionDestinationSpec
 import com.ramcosta.composedestinations.utils.isRouteOnBackStackAsState
 import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
@@ -28,7 +32,9 @@ enum class BottomBarItem(
 	@StringRes val label: Int,
 ) {
 	Home(HomeScreenDestination, Icons.Outlined.Home, R.string.home_screen),
+	Panel(PanelScreenDestination, Icons.Outlined.Dashboard, R.string.panel_screen),
 	Profile(ProfileScreenDestination, Icons.AutoMirrored.Outlined.TextSnippet, R.string.profile_screen),
+	Settings(SettingsScreenDestination, Icons.Outlined.Settings, R.string.settings_screen),
 }
 
 @Composable

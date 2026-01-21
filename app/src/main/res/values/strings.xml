@@ -1,7 +1,9 @@
 <resources>
     <string name="app_name">clash android</string>
     <string name="profile_screen">配置</string>
-    <string name="home_screen">首页</string>
+    <string name="home_screen">总览</string>
+    <string name="panel_screen">代理</string>
+    <string name="settings_screen">设置</string>
     <string name="logs_screen">日志</string>
     <string name="profile_title">配置文件管理</string>
     <string name="profile_description">选择并导入 Clash 配置文件</string>
@@ -14,9 +16,7 @@
     <string name="file_path">文件路径</string>
 
     <!-- Home Screen -->
-    <string name="tab_proxies">代理</string>
-    <string name="tab_overview">总览</string>
-    <string name="home_title">Clash 控制面板</string>
+    <string name="home_title">总览</string>
     <string name="refresh">刷新</string>
     <string name="no_proxy_groups">未找到代理组。VPN 是否正在运行？</string>
     <string name="retry">重试</string>
@@ -36,4 +36,15 @@
     <string name="timeout">超时</string>
     <string name="none">无</string>
     <string name="not_available">不可用</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">设置</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_dark_mode">深色模式</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_version">版本</string>
+    <string name="dark_mode_system">跟随系统</string>
+    <string name="dark_mode_light">浅色</string>
+    <string name="dark_mode_dark">深色</string>
 </resources>
