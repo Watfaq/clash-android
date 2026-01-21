@@ -16,8 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
+import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination
 import com.ramcosta.composedestinations.rememberNavHostEngine
 import rs.clash.android.ui.BottomBar
+import rs.clash.android.ui.SlideHorizontalTransitions
 import rs.clash.android.viewmodel.HomeViewModel
 
 @Composable
@@ -64,7 +67,10 @@ fun ClashApp(
 			navController = navCtrl,
 			navGraph = NavGraphs.root,
 			modifier = Modifier.padding(innerPadding),
-		)
+		) {
+			HomeScreenDestination animateWith SlideHorizontalTransitions
+			ProfileScreenDestination animateWith SlideHorizontalTransitions
+		}
 	}
 }
 
