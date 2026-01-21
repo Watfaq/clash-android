@@ -18,6 +18,7 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 panic = "abort"
+#strip = "debuginfo"
 strip = true
 
 [profile.dev.package.backtrace]

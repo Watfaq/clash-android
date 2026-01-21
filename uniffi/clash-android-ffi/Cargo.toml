@@ -21,7 +21,7 @@ tracing-subscriber = { version = "0.3", default-features = false, features = ["s
 paranoid-android = "0.2"
 color-eyre = "0.6"
 
-clash-lib = { package = "clash-lib", path = "../../../clash-rs/clash-lib", features = [
+clash-lib = { package = "clash-lib", git = "https://github.com/Watfaq/clash-rs.git", features = [
     "tuic", 
     "shadowquic",
     "shadowsocks",

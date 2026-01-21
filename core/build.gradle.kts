@@ -47,7 +47,6 @@ cargoNdk {
     module  = "uniffi"  // Directory containing Cargo.toml
     librariesNames = arrayListOf("libclash_android_ffi.so")
     extraCargoBuildArguments = arrayListOf("-p", "clash-android-ffi")
-    buildType = "release"
 }
 
 android {
@@ -80,8 +79,8 @@ android {
         }
 
         // And connectedDebugAndroidTest
-        tasks.named("connectedDebugAndroidTest").configure {
-            dependsOn(generateBindings)
-        }
+//        tasks.named("connected${variantName}AndroidTest").configure {
+//            dependsOn(generateBindings)
+//        }
     }
 }

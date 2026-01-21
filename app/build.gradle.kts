@@ -32,15 +32,33 @@ android {
 		versionName = verName
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+		ndk {
+			abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64"))
+		}
+	}
+	val keystore = System.getenv("KEYSTORE_FILE") ?: project.findProperty("KEYSTORE_FILE")
+
+	signingConfigs {
+		if (keystore == null) { return@signingConfigs }
+		create("release") {
+			storeFile = file(keystore)
+			storePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as? String
+			keyAlias = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS") as? String
+			keyPassword = System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD") as? String
+		}
 	}
 
 	buildTypes {
 		release {
 			isMinifyEnabled = true
+			if (keystore != null) {
+				signingConfig = signingConfigs.getByName("release")
+			}
 			proguardFiles(
 				getDefaultProguardFile("proguard-android-optimize.txt"),
 				"proguard-rules.pro",
 			)
+
 		}
 		debug {
 			isMinifyEnabled = false
@@ -56,6 +74,14 @@ android {
 	}
 	buildFeatures {
 		compose = true
+	}
+	splits {
+		abi {
+			isEnable = project.hasProperty("android.splits.abi.enable") && project.property("android.splits.abi.enable") == "true"
+			reset()
+			include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+			isUniversalApk = project.hasProperty("android.splits.abi.universalApk") && project.property("android.splits.abi.universalApk") == "true"
+		}
 	}
 }
 kotlin {
