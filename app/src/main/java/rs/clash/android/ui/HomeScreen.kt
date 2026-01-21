@@ -175,7 +175,7 @@ fun HomeScreen(
 
 @Composable
 fun ProxyTab(
-	proxies: Map<String, Proxy>,
+	proxies: Array<Proxy>,
 	isRefreshing: Boolean,
 	errorMessage: String?,
 	delays: Map<String, String>,
@@ -204,7 +204,7 @@ fun ProxyTab(
 					verticalArrangement = Arrangement.Center,
 				) {
 					Text(
-						text = errorMessage!!,
+						text = errorMessage,
 						color = MaterialTheme.colorScheme.error,
 						style = MaterialTheme.typography.bodyMedium,
 					)
@@ -227,13 +227,13 @@ fun ProxyTab(
 				}
 			}
 			else -> {
-				val proxyTypes =
+				val proxyTypesMap =
 					remember(proxies) {
-						proxies.mapValues { it.value.proxyType }
+						proxies.associate { it.name to it.proxyType }
 					}
 				val groups =
 					remember(proxies) {
-						proxies.filter { it.value.all.isNotEmpty() }.toList()
+						proxies.filter { it.all.isNotEmpty() }.toList()
 					}
 
 				if (groups.isNotEmpty()) {
@@ -245,19 +245,19 @@ fun ProxyTab(
 
 						items(
 							items = groups,
-							key = { it.first },
-						) { (name, proxy) ->
+							key = { it.name },
+						) { it ->
 							Box(modifier = Modifier.padding(horizontal = 16.dp)) {
 								ProxyGroupWidget(
-									name = name,
-									proxy = proxy,
+									name = it.name,
+									proxy = it,
 									delays = delays,
-									proxyTypes = proxyTypes,
+									proxyTypes = proxyTypesMap,
 									onSelect = { selectedName ->
-										onSelectProxy(name, selectedName)
+										onSelectProxy(it.name, selectedName)
 									},
 									onTestDelay = {
-										onTestGroupDelay(proxy.all)
+										onTestGroupDelay(it.all)
 									},
 								)
 							}

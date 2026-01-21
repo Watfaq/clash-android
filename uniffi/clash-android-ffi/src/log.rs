@@ -1,4 +1,5 @@
 use std::fs::OpenOptions;
+use tracing_error::ErrorLayer;
 use tracing_subscriber::{EnvFilter, fmt::time::LocalTime};
 #[allow(unused_imports)]
 use tracing_subscriber::{filter::LevelFilter, fmt::format::FmtSpan, prelude::*};
@@ -58,5 +59,6 @@ pub(crate) fn init_logger(level: LevelFilter, log_file_path: Option<String>) {
     tracing_subscriber::registry()
         .with(filter)
         .with(layers)
+        .with(ErrorLayer::default())
         .init();
 }

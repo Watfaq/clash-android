@@ -20,6 +20,10 @@ use clash_lib::config::internal::config::TunConfig;
 pub mod controller;
 pub mod log;
 
+type EyreError = eyre::Error;
+#[uniffi::remote(Object)]
+pub struct EyreError;
+
 #[derive(uniffi::Record)]
 pub struct ProfileOverride {
     pub tun_fd: i32,
@@ -39,9 +43,6 @@ pub struct ProfileOverride {
     pub some_flag: bool,
 }
 
-type EyreError = eyre::Report;
-#[uniffi::remote(Object)]
-pub struct EyreError;
 
 #[uniffi::export(async_runtime = "tokio")]
 async fn init_main(
@@ -106,7 +107,7 @@ async fn init_main(
 
     unsafe {
         std::env::set_var("RUST_BACKTRACE", "1");
-        std::env::set_var("NO_COLOR", "1");
+        // std::env::set_var("NO_COLOR", "1");
     }
     static INIT: Once = Once::new();
     INIT.call_once(|| {
@@ -132,7 +133,7 @@ async fn init_main(
         }));
 
         init_logger(config.general.log_level.into(), None);
-        // color_eyre::install().unwrap();
+        color_eyre::install().unwrap();
         tracing::info!("Init logger and panic hook");
     });
     info!(

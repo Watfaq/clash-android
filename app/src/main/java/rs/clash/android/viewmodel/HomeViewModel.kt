@@ -28,13 +28,14 @@ import rs.clash.android.service.tunService
 import uniffi.clash_android_ffi.ClashController
 import uniffi.clash_android_ffi.MemoryResponse
 import uniffi.clash_android_ffi.Proxy
+import uniffi.clash_android_ffi.shutdown
 
 class HomeViewModel : ViewModel() {
 	var profilePath = MutableLiveData<String?>(null)
 	var isVpnRunning by mutableStateOf(tunService != null)
 		private set
 
-	var proxies by mutableStateOf<Map<String, Proxy>>(emptyMap())
+	var proxies by mutableStateOf<Array<Proxy>>(emptyArray())
 		private set
 
 	private val controller by lazy { ClashController("${Global.application.cacheDir}/clash.sock") }
@@ -82,7 +83,7 @@ class HomeViewModel : ViewModel() {
 					fetchProxies()
 					startStatsPolling()
 				} else {
-					proxies = emptyMap()
+					proxies = emptyArray()
 					delays.clear()
 					errorMessage = null
 					memoryUsage = null
@@ -131,13 +132,13 @@ class HomeViewModel : ViewModel() {
 			try {
 				val proxies = controller.getProxies()
 
-				proxies.forEach { (name, proxy) ->
+				proxies.forEach { proxy ->
 					val lastDelay = proxy.history.lastOrNull()?.delay
 					if (lastDelay != null && lastDelay > 0) {
-						delays[name] = "${lastDelay}ms"
+						delays[proxy.name] = "${lastDelay}ms"
 					}
 				}
-				this@HomeViewModel.proxies = proxies
+				this@HomeViewModel.proxies = proxies.toTypedArray()
 			} catch (e: Exception) {
 				Log.e("ClashAPI", "Failed to fetch proxies", e)
 				errorMessage = "API Error: ${e.message}"
@@ -197,6 +198,7 @@ class HomeViewModel : ViewModel() {
 	}
 
 	fun stopVpn() {
+		shutdown()
 		tunService?.stopVpn()
 	}
 }

@@ -11,6 +11,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.DestinationsNavHost
@@ -27,30 +28,35 @@ fun ClashApp(
 	val engine = rememberNavHostEngine()
 	val navCtrl = engine.rememberNavController()
 
-	val launcher =
-		rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-			if (it.resultCode == RESULT_OK) {
-				// Permission granted, trigger start again
-				homeViewModel.startVpn()
-			}
-		}
+	val vpnPermissionLauncher =
+		rememberLauncherForActivityResult(
+			contract = ActivityResultContracts.StartActivityForResult(),
+			onResult = { result ->
+				if (result.resultCode == RESULT_OK) {
+					homeViewModel.startVpn()
+				}
+			},
+		)
+
+	val isVpnRunning = homeViewModel.isVpnRunning
 
 	Scaffold(
+		modifier = modifier,
 		bottomBar = { BottomBar(navCtrl) },
 		floatingActionButton = {
-			FloatingActionButton(onClick = {
-				if (homeViewModel.isVpnRunning) {
-					homeViewModel.stopVpn()
-				} else {
-					homeViewModel.startVpn(launcher)
-				}
-			}) {
-				if (homeViewModel.isVpnRunning) {
-					Icon(Icons.Filled.Stop, contentDescription = "Stop VPN")
-				} else {
-					Icon(Icons.Filled.PlayArrow, contentDescription = "Start VPN")
-				}
-			}
+			VpnToggleFab(
+				isVpnRunning = isVpnRunning,
+				onToggleVpn =
+					remember(isVpnRunning) {
+						{
+							if (isVpnRunning) {
+								homeViewModel.stopVpn()
+							} else {
+								homeViewModel.startVpn(vpnPermissionLauncher)
+							}
+						}
+					},
+			)
 		},
 	) { innerPadding ->
 		DestinationsNavHost(
@@ -58,6 +64,29 @@ fun ClashApp(
 			navController = navCtrl,
 			navGraph = NavGraphs.root,
 			modifier = Modifier.padding(innerPadding),
+		)
+	}
+}
+
+@Composable
+private fun VpnToggleFab(
+	isVpnRunning: Boolean,
+	onToggleVpn: () -> Unit,
+	modifier: Modifier = Modifier,
+) {
+	FloatingActionButton(
+		onClick = onToggleVpn,
+		modifier = modifier,
+	) {
+		val (icon, contentDescription) =
+			if (isVpnRunning) {
+				Icons.Filled.Stop to "Stop VPN"
+			} else {
+				Icons.Filled.PlayArrow to "Start VPN"
+			}
+		Icon(
+			imageVector = icon,
+			contentDescription = contentDescription,
 		)
 	}
 }

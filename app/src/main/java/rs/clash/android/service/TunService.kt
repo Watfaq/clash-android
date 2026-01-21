@@ -12,7 +12,6 @@ import rs.clash.android.Global
 import rs.clash.android.ffi.initClash
 import uniffi.clash_android_ffi.ProfileOverride
 import java.io.File
-import java.net.Inet4Address
 
 var tunService: TunService? = null
 

@@ -19,3 +19,6 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+
+[profile.dev.package.backtrace]
+opt-level = 3

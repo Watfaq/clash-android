@@ -11,10 +11,11 @@ ffi-trace = ["uniffi/ffi-trace"]
 uniffi.workspace = true
 
 eyre = "0.6"
-
 tokio = "1"
 
+# Logging
 tracing = "0.1"
+tracing-error = "0.2.1"
 time = { version = "0.3", features = ["macros", "local-offset"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt"]}
 paranoid-android = "0.2"

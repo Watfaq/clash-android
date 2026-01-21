@@ -14,14 +14,27 @@ use hyperlocal::{UnixConnector, Uri as UnixUri};
 
 use crate::EyreError;
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, uniffi::Enum)]
+#[serde(rename_all = "lowercase")]
+pub enum Mode {
+    Rule,
+    Global,
+    Direct,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct Proxy {
+    /// Proxy name
     pub name: String,
+    /// Proxy type (e.g., Selector, URLTest, Fallback, Direct, Reject, etc.)
     #[serde(rename = "type")]
     pub proxy_type: String,
+    /// All proxy node names contained in the proxy group (only for proxy groups)
     #[serde(default)]
     pub all: Vec<String>,
+    /// Currently selected proxy node name (only for proxy groups)
     pub now: Option<String>,
+    /// Delay test history records
     #[serde(default)]
     pub history: Vec<DelayHistory>,
 }
@@ -82,7 +95,7 @@ pub struct ConfigResponse {
     #[serde(rename = "external-controller")]
     pub external_controller: Option<String>,
     pub secret: Option<String>,
-    pub mode: Option<String>,
+    pub mode: Option<Mode>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,6 +108,7 @@ struct ProxiesResponse {
 pub struct ClashController {
     socket_path: String,
 }
+
 #[uniffi::export(async_runtime = "tokio")]
 impl ClashController {
     /// Create a new HTTP client that connects via Unix domain socket
@@ -104,9 +118,50 @@ impl ClashController {
     }
 
     /// Get all proxies
-    pub async fn get_proxies(&self) -> Result<HashMap<String, Proxy>, EyreError> {
-        let response: ProxiesResponse = self.request("GET", "/proxies", None).await?;
-        Ok(response.proxies)
+    pub async fn get_proxies(&self) -> Result<Vec<Proxy>, EyreError> {
+        let mode = self.get_mode().await?.unwrap_or(Mode::Rule);
+
+        // If in direct mode, return a single DIRECT proxy
+        if matches!(mode, Mode::Direct) {
+            return Ok(vec![Proxy {
+                name: "DIRECT".to_string(),
+                proxy_type: "Direct".to_string(),
+                all: Vec::new(),
+                now: None,
+                history: Vec::new(),
+            }]);
+        }
+
+        let mut response: ProxiesResponse = self.request("GET", "/proxies", None).await?;
+
+        // Get the order from GLOBAL proxy group's 'all' field
+        if let Some(global_group) = response.proxies.remove("GLOBAL") {
+            let mut sorted_proxies = Vec::new();
+
+            // First add proxies in GLOBAL's 'all' order
+            for name in &global_group.all {
+                if let Some(proxy) = response.proxies.get(name) {
+                    sorted_proxies.push(proxy.clone());
+                }
+            }
+
+            // Then add any remaining proxies not in GLOBAL's 'all'
+            for (name, proxy) in &response.proxies {
+                if !global_group.all.contains(name) {
+                    sorted_proxies.push(proxy.clone());
+                }
+            }
+
+            // Add GLOBAL group at the front when GLOBAL mode is active
+            if matches!(mode, Mode::Global) {
+                sorted_proxies.insert(0, global_group);
+            }
+
+            Ok(sorted_proxies)
+        } else {
+            // If no GLOBAL group, return proxies as a vec
+            Ok(response.proxies.values().cloned().collect())
+        }
     }
 
     /// Select a proxy for a group
@@ -166,6 +221,24 @@ impl ClashController {
 
         self.request_no_response("PATCH", "/configs", Some(body_bytes))
             .await
+    }
+
+    /// Set proxy mode (rule, global, direct)
+    pub async fn set_mode(&self, mode: Mode) -> Result<(), EyreError> {
+        let mode_str = match mode {
+            Mode::Rule => "rule",
+            Mode::Global => "global",
+            Mode::Direct => "direct",
+        };
+        let mut config = HashMap::new();
+        config.insert("mode".to_string(), mode_str.to_string());
+        self.update_config(config).await
+    }
+
+    /// Get current proxy mode
+    pub async fn get_mode(&self) -> Result<Option<Mode>, EyreError> {
+        let config = self.get_configs().await?;
+        Ok(config.mode)
     }
 }
 
