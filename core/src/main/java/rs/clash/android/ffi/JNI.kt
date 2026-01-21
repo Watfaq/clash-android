@@ -1,9 +1,9 @@
 package rs.clash.android.ffi
 
 object JNI {
-    external fun setup()
+	external fun setup()
 
-    init {
-        System.loadLibrary("clash_android_ffi")
-    }
+	init {
+		System.loadLibrary("clash_android_ffi")
+	}
 }

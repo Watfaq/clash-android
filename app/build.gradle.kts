@@ -1,11 +1,9 @@
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
-
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.kotlin.serialization)
+	alias(libs.plugins.android.application)
+	alias(libs.plugins.kotlin.android)
+	alias(libs.plugins.kotlin.compose)
+	alias(libs.plugins.ksp)
+	alias(libs.plugins.ktlint)
 }
 
 val baseVersionName = "0.1.0"
@@ -15,80 +13,81 @@ val Project.isDevVersion: Boolean get() = exec("git tag -l v$baseVersionName").i
 val Project.versionNameSuffix: String get() = if (isDevVersion) ".dev" else ""
 
 fun Project.exec(command: String): String =
-    providers
-        .exec {
-            commandLine(command.split(" "))
-        }.standardOutput.asText
-        .get()
-        .trim()
+	providers
+		.exec {
+			commandLine(command.split(" "))
+		}.standardOutput.asText
+		.get()
+		.trim()
 
 android {
-    namespace = "rs.clash.android"
-    compileSdk = 36
+	namespace = "rs.clash.android"
+	compileSdk = 36
 
-    defaultConfig {
-        applicationId = "rs.clash.android"
-        minSdk = 23
-        targetSdk = 36
-        versionCode = verCode
-        versionName = verName
+	defaultConfig {
+		applicationId = "rs.clash.android"
+		minSdk = 23
+		targetSdk = 36
+		versionCode = verCode
+		versionName = verName
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
+		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+	}
 
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
-        }
-        debug {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-    buildFeatures {
-        compose = true
-    }
+	buildTypes {
+		release {
+			isMinifyEnabled = true
+			proguardFiles(
+				getDefaultProguardFile("proguard-android-optimize.txt"),
+				"proguard-rules.pro",
+			)
+		}
+		debug {
+			isMinifyEnabled = false
+			proguardFiles(
+				getDefaultProguardFile("proguard-android-optimize.txt"),
+				"proguard-rules.pro",
+			)
+		}
+	}
+	compileOptions {
+		sourceCompatibility = JavaVersion.VERSION_21
+		targetCompatibility = JavaVersion.VERSION_21
+	}
+	buildFeatures {
+		compose = true
+	}
 }
 kotlin {
-    jvmToolchain(21)
+	jvmToolchain(21)
 }
 
 dependencies {
-    implementation(project(":core"))
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.runtime.livedata)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
+	implementation(project(":core"))
+	implementation(platform(libs.androidx.compose.bom))
+	implementation(libs.androidx.lifecycle.viewmodel.compose)
+	implementation(libs.androidx.runtime.livedata)
+	implementation(libs.androidx.core.ktx)
+	implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
+	implementation(libs.androidx.activity.compose)
+	implementation(libs.androidx.ui)
+	implementation(libs.androidx.ui.graphics)
+	implementation(libs.androidx.ui.tooling.preview)
+	implementation(libs.androidx.compose.material3)
+	implementation(libs.androidx.material3)
+	implementation(libs.androidx.material.icons.extended)
+	implementation(libs.compose.destinations.core)
 
-    implementation(libs.compose.destinations.core)
-    ksp(libs.compose.destinations.ksp)
+	ksp(libs.compose.destinations.ksp)
 
-    implementation(libs.kaml)
+	testImplementation(libs.junit)
+	androidTestImplementation(libs.androidx.junit)
+	androidTestImplementation(libs.androidx.espresso.core)
+	androidTestImplementation(platform(libs.androidx.compose.bom))
+	androidTestImplementation(libs.androidx.ui.test.junit4)
+	debugImplementation(libs.androidx.ui.tooling)
+	debugImplementation(libs.androidx.ui.test.manifest)
 
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+	ktlintRuleset(libs.ktlint.compose.rules)
 }

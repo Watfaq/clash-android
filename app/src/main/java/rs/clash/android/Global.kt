@@ -7,20 +7,20 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 
 object Global : CoroutineScope by CoroutineScope(Dispatchers.IO) {
-    val application: Application
-        get() = application_
+	val application: Application
+		get() = applicationInstance
 
-    private lateinit var application_: Application
+	private lateinit var applicationInstance: Application
 
-    var profilePath: String = ""
+	var profilePath: String = ""
 
-    val isServiceRunning = MutableStateFlow(false)
+	val isServiceRunning = MutableStateFlow(false)
 
-    fun init(application: Application) {
-        this.application_ = application
-    }
+	fun init(application: Application) {
+		this.applicationInstance = application
+	}
 
-    fun destroy() {
-        cancel()
-    }
+	fun destroy() {
+		cancel()
+	}
 }

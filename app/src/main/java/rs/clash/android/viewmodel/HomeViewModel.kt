@@ -22,180 +22,181 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import rs.clash.android.*
+import rs.clash.android.Global
 import rs.clash.android.service.TunService
 import rs.clash.android.service.tunService
 import uniffi.clash_android_ffi.ClashController
-import uniffi.clash_android_ffi.Proxy
 import uniffi.clash_android_ffi.MemoryResponse
-
-import java.io.File
+import uniffi.clash_android_ffi.Proxy
 
 class HomeViewModel : ViewModel() {
-    var profilePath = MutableLiveData<String?>(null)
-    var isVpnRunning by mutableStateOf(tunService != null)
-        private set
+	var profilePath = MutableLiveData<String?>(null)
+	var isVpnRunning by mutableStateOf(tunService != null)
+		private set
 
-    var proxies by mutableStateOf<Map<String, Proxy>>(emptyMap())
-        private set
+	var proxies by mutableStateOf<Map<String, Proxy>>(emptyMap())
+		private set
 
-    private val controller by lazy { ClashController("${Global.application.cacheDir}/clash.sock") }
-    var isRefreshing by mutableStateOf(false)
-        private set
-    
-    var errorMessage by mutableStateOf<String?>(null)
-        private set
+	private val controller by lazy { ClashController("${Global.application.cacheDir}/clash.sock") }
+	var isRefreshing by mutableStateOf(false)
+		private set
 
-    val delays = mutableStateMapOf<String, String>()
+	var errorMessage by mutableStateOf<String?>(null)
+		private set
 
-    // Overview data
-    var memoryUsage by mutableStateOf<MemoryResponse?>(null)
-        private set
-    var connectionCount by mutableIntStateOf(0)
-        private set
-    var totalDownload by mutableLongStateOf(0)
-        private set
-    var totalUpload  by mutableLongStateOf(0)
-        private set
+	val delays = mutableStateMapOf<String, String>()
 
-    private val sharedPreferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
-        if (key == "profile_path") {
-            val path = sharedPreferences.getString("profile_path", null)
-            profilePath.value = path
-            Global.profilePath = path ?: ""
-        }
-    }
+	// Overview data
+	var memoryUsage by mutableStateOf<MemoryResponse?>(null)
+		private set
+	var connectionCount by mutableIntStateOf(0)
+		private set
+	var totalDownload by mutableLongStateOf(0)
+		private set
+	var totalUpload by mutableLongStateOf(0)
+		private set
 
-    init {
-        val context = Global.application.applicationContext
-        val sharedPreferences = context.getSharedPreferences("file_prefs", MODE_PRIVATE)
-        val initialPath = sharedPreferences.getString("profile_path", null)
-        profilePath.value = initialPath
-        Global.profilePath = initialPath ?: ""
+	private val sharedPreferenceChangeListener =
+		SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+			if (key == "profile_path") {
+				val path = sharedPreferences.getString("profile_path", null)
+				profilePath.value = path
+				Global.profilePath = path ?: ""
+			}
+		}
 
-        sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
+	init {
+		val context = Global.application.applicationContext
+		val sharedPreferences = context.getSharedPreferences("file_prefs", MODE_PRIVATE)
+		val initialPath = sharedPreferences.getString("profile_path", null)
+		profilePath.value = initialPath
+		Global.profilePath = initialPath ?: ""
 
-        viewModelScope.launch {
-            Global.isServiceRunning.collectLatest { running ->
-                isVpnRunning = running
-                if (running) {
-                    delay(1000)
-                    fetchProxies()
-                    startStatsPolling()
-                } else {
-                    proxies = emptyMap()
-                    delays.clear()
-                    errorMessage = null
-                    memoryUsage = null
-                    connectionCount = 0
-                    totalDownload = 0
-                    totalUpload = 0
-                }
-            }
-        }
-    }
+		sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
 
-    override fun onCleared() {
-        super.onCleared()
-        val sharedPreferences = Global.application.getSharedPreferences("file_prefs", MODE_PRIVATE)
-        sharedPreferences.unregisterOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
-    }
+		viewModelScope.launch {
+			Global.isServiceRunning.collectLatest { running ->
+				isVpnRunning = running
+				if (running) {
+					delay(1000)
+					fetchProxies()
+					startStatsPolling()
+				} else {
+					proxies = emptyMap()
+					delays.clear()
+					errorMessage = null
+					memoryUsage = null
+					connectionCount = 0
+					totalDownload = 0
+					totalUpload = 0
+				}
+			}
+		}
+	}
 
-    private fun startStatsPolling() {
-        viewModelScope.launch {
-            while (isVpnRunning) {
-                fetchOverviewStats()
-                delay(3000) // Poll every 3 seconds
-            }
-        }
-    }
+	override fun onCleared() {
+		super.onCleared()
+		val sharedPreferences = Global.application.getSharedPreferences("file_prefs", MODE_PRIVATE)
+		sharedPreferences.unregisterOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)
+	}
 
-    private suspend fun fetchOverviewStats() {
-        if (!isVpnRunning) return
-        try {
-            memoryUsage = controller.getMemory()
-            val connResponse = controller.getConnections()
-            connectionCount = connResponse.connections.size
-            totalDownload = connResponse.downloadTotal
-            totalUpload = connResponse.uploadTotal
-        } catch (e: Exception) {
-            Log.e("ClashAPI", "Failed to fetch stats", e)
-        }
-    }
-    
-    fun fetchProxies() {
-        if (!isVpnRunning) return
-        
-        isRefreshing = true
-        errorMessage = null
-        viewModelScope.launch {
-            try {
-                val proxies = controller.getProxies()
+	private fun startStatsPolling() {
+		viewModelScope.launch {
+			while (isVpnRunning) {
+				fetchOverviewStats()
+				delay(3000) // Poll every 3 seconds
+			}
+		}
+	}
 
-                proxies.forEach { (name, proxy) ->
-                    val lastDelay = proxy.history.lastOrNull()?.delay
-                    if (lastDelay != null && lastDelay > 0) {
-                        delays[name] = "${lastDelay}ms"
-                    }
-                }
-                this@HomeViewModel.proxies = proxies
-            } catch (e: Exception) {
-                Log.e("ClashAPI", "Failed to fetch proxies", e)
-                errorMessage = "API Error: ${e.message}"
-            } finally {
-                isRefreshing = false
-            }
-        }
-    }
+	private suspend fun fetchOverviewStats() {
+		if (!isVpnRunning) return
+		try {
+			memoryUsage = controller.getMemory()
+			val connResponse = controller.getConnections()
+			connectionCount = connResponse.connections.size
+			totalDownload = connResponse.downloadTotal
+			totalUpload = connResponse.uploadTotal
+		} catch (e: Exception) {
+			Log.e("ClashAPI", "Failed to fetch stats", e)
+		}
+	}
 
-    fun testGroupDelay(proxyNames: List<String>) {
-        viewModelScope.launch {
-            proxyNames.map { name ->
-                async {
-                    testProxyDelay(name)
-                }
-            }.awaitAll()
-        }
-    }
+	fun fetchProxies() {
+		if (!isVpnRunning) return
 
-    suspend fun testProxyDelay(name: String) {
+		isRefreshing = true
+		errorMessage = null
+		viewModelScope.launch {
+			try {
+				val proxies = controller.getProxies()
 
-        try {
-            delays[name] = "testing..."
-            val response = controller.getProxyDelay(name, null, null)
-            delays[name] = "${response.delay}ms"
-        } catch (e: Exception) {
-            delays[name] = "timeout"
-        }
-    }
+				proxies.forEach { (name, proxy) ->
+					val lastDelay = proxy.history.lastOrNull()?.delay
+					if (lastDelay != null && lastDelay > 0) {
+						delays[name] = "${lastDelay}ms"
+					}
+				}
+				this@HomeViewModel.proxies = proxies
+			} catch (e: Exception) {
+				Log.e("ClashAPI", "Failed to fetch proxies", e)
+				errorMessage = "API Error: ${e.message}"
+			} finally {
+				isRefreshing = false
+			}
+		}
+	}
 
-    fun selectProxy(groupName: String, proxyName: String) {
+	fun testGroupDelay(proxyNames: List<String>) {
+		viewModelScope.launch {
+			proxyNames
+				.map { name ->
+					async {
+						testProxyDelay(name)
+					}
+				}.awaitAll()
+		}
+	}
 
-        viewModelScope.launch {
-            try {
-                controller.selectProxy(groupName, proxyName)
-                fetchProxies()
-            } catch (e: Exception) {
-                Log.e("ClashAPI", "Failed to select proxy", e)
-            }
-        }
-    }
+	suspend fun testProxyDelay(name: String) {
+		try {
+			delays[name] = "testing..."
+			val response = controller.getProxyDelay(name, null, null)
+			delays[name] = "${response.delay}ms"
+		} catch (e: Exception) {
+			delays[name] = "timeout"
+		}
+	}
 
-    fun startVpn(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>? = null) {
-        val app = Global.application
-        if (Global.profilePath.isEmpty()) {
-            Toast.makeText(app, "Please select a config file first", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val intent = VpnService.prepare(app)
-        if (intent != null) {
-            launcher?.launch(intent)
-        } else {
-            app.startService(TunService::class.intent)
-        }
-    }
+	fun selectProxy(
+		groupName: String,
+		proxyName: String,
+	) {
+		viewModelScope.launch {
+			try {
+				controller.selectProxy(groupName, proxyName)
+				fetchProxies()
+			} catch (e: Exception) {
+				Log.e("ClashAPI", "Failed to select proxy", e)
+			}
+		}
+	}
 
-    fun stopVpn() {
-        tunService?.stopVpn()
-    }
+	fun startVpn(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>? = null) {
+		val app = Global.application
+		if (Global.profilePath.isEmpty()) {
+			Toast.makeText(app, "Please select a config file first", Toast.LENGTH_SHORT).show()
+			return
+		}
+		val intent = VpnService.prepare(app)
+		if (intent != null) {
+			launcher?.launch(intent)
+		} else {
+			app.startService(Intent(app, TunService::class.java))
+		}
+	}
+
+	fun stopVpn() {
+		tunService?.stopVpn()
+	}
 }

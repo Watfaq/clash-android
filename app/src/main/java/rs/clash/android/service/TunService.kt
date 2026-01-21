@@ -15,74 +15,73 @@ import java.io.File
 var tunService: TunService? = null
 
 class TunService : VpnService() {
-    private var vpnInterface: ParcelFileDescriptor? = null
-    private var tunFd: Int? = null
+	private var vpnInterface: ParcelFileDescriptor? = null
+	private var tunFd: Int? = null
 
+	override fun onStartCommand(
+		intent: Intent?,
+		flags: Int,
+		startId: Int,
+	): Int {
+		Log.i("clash", "onStartCommand")
+		CoroutineScope(Dispatchers.Default).launch {
+			runVpn()
+		}
 
-    override fun onStartCommand(
-        intent: Intent?,
-        flags: Int,
-        startId: Int,
-    ): Int {
-        Log.i("clash", "onStartCommand")
-        CoroutineScope(Dispatchers.Default).launch {
-            runVpn()
-        }
+		tunService = this
+		Global.isServiceRunning.value = true
+		return START_STICKY
+	}
 
-        tunService = this
-        Global.isServiceRunning.value = true
-        return START_STICKY
-    }
+	override fun onCreate() {
+		super.onCreate()
+	}
 
-    override fun onCreate() {
-        super.onCreate()
-    }
+	override fun onRevoke() {
+		stopVpn()
+		super.onRevoke()
+	}
 
-    override fun onRevoke() {
-        stopVpn()
-        super.onRevoke()
-    }
+	override fun onDestroy() {
+		stopVpn()
+		super.onDestroy()
+	}
 
-    override fun onDestroy() {
-        stopVpn()
-        super.onDestroy()
-    }
+	private suspend fun runVpn() {
+		val builder = Builder()
+		builder.setSession("ClashRS VPNService")
+		builder.addAddress("10.0.0.1", 30)
+		builder.addRoute("0.0.0.0", 0)
+		builder.addDnsServer("10.0.0.2")
+		builder.addDisallowedApplication(packageName)
 
-    private suspend fun runVpn() {
-        val builder = Builder()
-        builder.setSession("ClashRS VPNService")
-        builder.addAddress("10.0.0.1", 30)
-        builder.addRoute("0.0.0.0", 0)
-        builder.addDnsServer("10.0.0.2")
-        builder.addDisallowedApplication(packageName)
+		vpnInterface = builder.establish()
 
-        vpnInterface = builder.establish()
+		tunFd = vpnInterface?.fd
+		val assets = Global.application.assets
+		listOf("Country.mmdb", "geosite.dat").forEach { name ->
+			assets
+				.open("clash-res/$name")
+				.use { it ->
+					val file = File("${Global.application.cacheDir}/$name")
+					file.deleteOnExit()
+					file.createNewFile()
+					it.copyTo(file.outputStream())
+				}
+		}
 
-        tunFd = vpnInterface?.fd
-        val assets = Global.application.assets
-        listOf("Country.mmdb", "geosite.dat").forEach { name ->
-            assets
-                .open("clash-res/$name")
-                .use { it ->
-                    val file = File("${Global.application.cacheDir}/$name")
-                    file.deleteOnExit()
-                    file.createNewFile()
-                    it.copyTo(file.outputStream())
-                }
-        }
+		initClash(
+			Global.profilePath,
+			Global.application.cacheDir.toString(),
+			ProfileOverride(tunFd!!, "${Global.application.cacheDir}/clash-rs.log"),
+		)
+	}
 
-        initClash(
-            Global.profilePath,
-            Global.application.cacheDir.toString(),
-            ProfileOverride(tunFd!!, "${Global.application.cacheDir}/clash-rs.log")
-        )
-    }
-
-    fun stopVpn() {
-        vpnInterface?.close()
-        vpnInterface = null
-        tunService = null
-        Global.isServiceRunning.value = false
-        stopSelf()
-    }
+	fun stopVpn() {
+		vpnInterface?.close()
+		vpnInterface = null
+		tunService = null
+		Global.isServiceRunning.value = false
+		stopSelf()
+	}
 }
