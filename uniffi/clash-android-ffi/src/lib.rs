@@ -8,40 +8,17 @@ use clash_lib::{
 };
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    sync::{LazyLock, Once, OnceLock},
+    sync::Once,
 };
 
 use log::init_logger;
-use tokio::{runtime::Runtime, sync::broadcast, task::JoinHandle};
+use tokio::{sync::broadcast, task::JoinHandle};
 use tracing::{error, info};
 
 use clash_lib::config::internal::config::TunConfig;
 
 pub mod controller;
 pub mod log;
-
-pub static RT: LazyLock<Runtime> = LazyLock::new(|| {
-    let mut builder = tokio::runtime::Builder::new_multi_thread();
-    let rt = builder
-        .on_thread_start(|| {
-            let vm = VM.get().expect("init java vm");
-            vm.attach_current_thread_permanently().unwrap();
-        })
-        .enable_all()
-        .build()
-        .unwrap();
-    rt.block_on(uniffi::deps::async_compat::Compat::new(async {}));
-    rt
-});
-
-static VM: OnceLock<jni::JavaVM> = OnceLock::new();
-
-#[unsafe(export_name = "Java_rs_clash_android_ffi_JNI_setup")]
-pub extern "system" fn setup_tokio(env: jni::JNIEnv, _class: jni::objects::JClass) {
-    let vm = env.get_java_vm().unwrap();
-    _ = VM.set(vm);
-    LazyLock::force(&RT);
-}
 
 #[derive(uniffi::Record)]
 pub struct ProfileOverride {
@@ -182,7 +159,7 @@ async fn init_main(
         over.tun_fd, over.log_file_path
     );
 
-    let _: JoinHandle<eyre::Result<()>> = RT.spawn(async {
+    let _: JoinHandle<eyre::Result<()>> = tokio::spawn(async {
         let (log_tx, _) = broadcast::channel(100);
         info!("Starting clash-rs");
         if let Err(err) = start(config, work_dir, log_tx).await {

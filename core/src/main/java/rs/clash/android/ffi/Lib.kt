@@ -8,7 +8,5 @@ suspend fun initClash(
 	workDir: String,
 	over: ProfileOverride,
 ) {
-	JNI.setup()
-
 	initMain(configPath, workDir, over)
 }
