@@ -1,5 +1,6 @@
 package rs.clash.android.service
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.VpnService
 import android.os.ParcelFileDescriptor
@@ -11,9 +12,11 @@ import rs.clash.android.Global
 import rs.clash.android.ffi.initClash
 import uniffi.clash_android_ffi.ProfileOverride
 import java.io.File
+import java.net.Inet4Address
 
 var tunService: TunService? = null
 
+@SuppressLint("VpnServicePolicy")
 class TunService : VpnService() {
 	private var vpnInterface: ParcelFileDescriptor? = null
 	private var tunFd: Int? = null
@@ -52,7 +55,8 @@ class TunService : VpnService() {
 		builder.setSession("ClashRS VPNService")
 		builder.addAddress("10.0.0.1", 30)
 		builder.addRoute("0.0.0.0", 0)
-		builder.addDnsServer("10.0.0.2")
+
+		// builder.addDnsServer("10.0.0.2")
 		builder.addDisallowedApplication(packageName)
 
 		vpnInterface = builder.establish()

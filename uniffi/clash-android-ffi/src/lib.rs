@@ -130,7 +130,7 @@ async fn init_main(
 
         listen: DNSListenAddr {
             udp: Some(SocketAddr::new(
-                IpAddr::V4(Ipv4Addr::new(10, 0, 0, 2)),
+                IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
                 53553,
             )),
 

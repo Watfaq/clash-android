@@ -66,6 +66,7 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
 import rs.clash.android.R
 import rs.clash.android.viewmodel.HomeViewModel
+import uniffi.clash_android_ffi.MemoryResponse
 import uniffi.clash_android_ffi.Proxy
 import java.util.Locale
 import kotlin.math.log10
