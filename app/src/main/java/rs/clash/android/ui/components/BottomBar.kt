@@ -1,4 +1,4 @@
-package rs.clash.android.ui
+package rs.clash.android.ui.components
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons

@@ -13,13 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -28,6 +23,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -36,13 +32,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.ConnectionsScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.R
+import rs.clash.android.formatSize
+import rs.clash.android.ui.components.TitleBar
 import rs.clash.android.viewmodel.HomeViewModel
 import uniffi.clash_android_ffi.MemoryResponse
-import java.util.Locale
-import kotlin.math.log10
-import kotlin.math.pow
 
 @Destination<RootGraph>(start = true)
 @Composable
@@ -69,28 +65,6 @@ fun HomeScreen(
 				title = stringResource(R.string.home_title),
 			)
 		},
-		floatingActionButton = {
-			FloatingActionButton(
-				onClick = {
-					if (isVpnRunning) {
-						viewModel.stopVpn()
-					} else {
-						viewModel.startVpn(vpnPermissionLauncher)
-					}
-				},
-			) {
-				val (icon, contentDescription) =
-					if (isVpnRunning) {
-						Icons.Filled.Stop to "Stop VPN"
-					} else {
-						Icons.Filled.PlayArrow to "Start VPN"
-					}
-				Icon(
-					imageVector = icon,
-					contentDescription = contentDescription,
-				)
-			}
-		},
 	) { padding ->
 		val memory by remember { derivedStateOf { viewModel.memoryUsage } }
 		val connections by remember { derivedStateOf { viewModel.connectionCount } }
@@ -102,6 +76,17 @@ fun HomeScreen(
 			connections = connections,
 			download = download,
 			upload = upload,
+			isVpnRunning = isVpnRunning,
+			onVpnToggle = {
+				if (isVpnRunning) {
+					viewModel.stopVpn()
+				} else {
+					viewModel.startVpn(vpnPermissionLauncher)
+				}
+			},
+			onConnectionsClick = {
+				navigator.navigate(ConnectionsScreenDestination)
+			},
 			modifier = Modifier.padding(padding).fillMaxSize(),
 		)
 	}
@@ -113,13 +98,28 @@ fun OverviewTab(
 	connections: Int,
 	download: Long,
 	upload: Long,
+	isVpnRunning: Boolean,
+	onVpnToggle: () -> Unit,
 	modifier: Modifier = Modifier,
+	onConnectionsClick: () -> Unit = {},
 ) {
 	LazyColumn(
 		modifier = modifier.fillMaxSize(),
 		verticalArrangement = Arrangement.spacedBy(12.dp),
 	) {
 		item { Spacer(modifier = Modifier.height(16.dp)) }
+
+		item(key = "vpn") {
+			Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+				StatsCard(
+					title = stringResource(R.string.stat_vpn),
+					value = if (isVpnRunning) stringResource(R.string.stat_vpn_running) else stringResource(R.string.stat_vpn_stopped),
+					subtitle = if (isVpnRunning) stringResource(R.string.stat_vpn_hint_stop) else stringResource(R.string.stat_vpn_hint_start),
+					containerColor = if (isVpnRunning) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
+					onClick = onVpnToggle,
+				)
+			}
+		}
 
 		item(key = "memory") {
 			Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -146,6 +146,7 @@ fun OverviewTab(
 						} else {
 							stringResource(R.string.stat_connections_none)
 						},
+					onClick = onConnectionsClick,
 				)
 			}
 		}
@@ -180,6 +181,8 @@ fun StatsCard(
 	value: String,
 	modifier: Modifier = Modifier,
 	subtitle: String = "",
+	containerColor: Color? = null,
+	onClick: (() -> Unit)? = null,
 ) {
 	Card(
 		modifier =
@@ -189,6 +192,13 @@ fun StatsCard(
 					contentDescription = "$title: $value${if (subtitle.isNotEmpty()) ", $subtitle" else ""}"
 				},
 		elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+		colors =
+			if (containerColor != null) {
+				CardDefaults.cardColors(containerColor = containerColor)
+			} else {
+				CardDefaults.cardColors()
+			},
+		onClick = onClick ?: {},
 	) {
 		Column(
 			modifier = Modifier.padding(16.dp),
@@ -214,11 +224,4 @@ fun StatsCard(
 			}
 		}
 	}
-}
-
-fun formatSize(size: Long): String {
-	if (size <= 0) return "0 B"
-	val units = arrayOf("B", "KB", "MB", "GB", "TB")
-	val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
-	return String.format(Locale.US, "%.2f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
 }

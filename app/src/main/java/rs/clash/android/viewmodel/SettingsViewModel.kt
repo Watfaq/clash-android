@@ -5,7 +5,9 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
+import rs.clash.android.R
 
 enum class DarkModePreference {
 	SYSTEM,
@@ -30,6 +32,15 @@ class SettingsViewModel(
 	var languagePreference: LanguagePreference by mutableStateOf(loadLanguagePreference())
 		private set
 
+	var foregroundServiceEnabled: Boolean by mutableStateOf(loadForegroundServiceEnabled())
+		private set
+
+	var fakeIpEnabled: Boolean by mutableStateOf(loadFakeIpEnabled())
+		private set
+
+	var ipv6Enabled: Boolean by mutableStateOf(loadIpv6Enabled())
+		private set
+
 	private fun loadDarkModePreference(): DarkModePreference {
 		val value = prefs.getString("dark_mode", "SYSTEM") ?: "SYSTEM"
 		return try {
@@ -48,27 +59,52 @@ class SettingsViewModel(
 		}
 	}
 
+	private fun loadForegroundServiceEnabled(): Boolean = prefs.getBoolean("foreground_service_enabled", false)
+
+	private fun loadFakeIpEnabled(): Boolean = prefs.getBoolean("fake_ip", false)
+
+	private fun loadIpv6Enabled(): Boolean = prefs.getBoolean("ipv6", true)
+
 	fun updateDarkModePreference(preference: DarkModePreference) {
 		darkModePreference = preference
-		prefs.edit().putString("dark_mode", preference.name).apply()
+		prefs.edit { putString("dark_mode", preference.name) }
 	}
 
 	fun updateLanguagePreference(preference: LanguagePreference) {
 		languagePreference = preference
-		prefs.edit().putString("language", preference.name).apply()
+		prefs.edit { putString("language", preference.name) }
 	}
 
-	fun getDarkModeDisplayName(): String =
-		when (darkModePreference) {
-			DarkModePreference.SYSTEM -> "跟随系统"
-			DarkModePreference.LIGHT -> "浅色"
-			DarkModePreference.DARK -> "深色"
-		}
+	fun updateForegroundServiceEnabled(enabled: Boolean) {
+		foregroundServiceEnabled = enabled
+		prefs.edit { putBoolean("foreground_service_enabled", enabled) }
+	}
 
-	fun getLanguageDisplayName(): String =
-		when (languagePreference) {
-			LanguagePreference.SYSTEM -> "跟随系统"
-			LanguagePreference.SIMPLIFIED_CHINESE -> "简体中文"
-			LanguagePreference.ENGLISH -> "English"
+	fun updateFakeIpEnabled(enabled: Boolean) {
+		fakeIpEnabled = enabled
+		prefs.edit { putBoolean("fake_ip", enabled) }
+	}
+
+	fun updateIpv6Enabled(enabled: Boolean) {
+		ipv6Enabled = enabled
+		prefs.edit { putBoolean("ipv6", enabled) }
+	}
+
+	fun getDarkModeDisplayName(): String {
+		val context = getApplication<Application>().applicationContext
+		return when (darkModePreference) {
+			DarkModePreference.SYSTEM -> context.getString(R.string.dark_mode_system)
+			DarkModePreference.LIGHT -> context.getString(R.string.dark_mode_light)
+			DarkModePreference.DARK -> context.getString(R.string.dark_mode_dark)
 		}
+	}
+
+	fun getLanguageDisplayName(): String {
+		val context = getApplication<Application>().applicationContext
+		return when (languagePreference) {
+			LanguagePreference.SYSTEM -> context.getString(R.string.language_system)
+			LanguagePreference.SIMPLIFIED_CHINESE -> context.getString(R.string.language_simplified_chinese)
+			LanguagePreference.ENGLISH -> context.getString(R.string.language_english)
+		}
+	}
 }

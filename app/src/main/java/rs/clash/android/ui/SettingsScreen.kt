@@ -1,5 +1,9 @@
 package rs.clash.android.ui
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,8 +19,12 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Router
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -43,7 +53,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import rs.clash.android.MainActivity
 import rs.clash.android.R
+import rs.clash.android.ui.components.TitleBar
+import rs.clash.android.util.PermissionHelper
 import rs.clash.android.viewmodel.DarkModePreference
 import rs.clash.android.viewmodel.LanguagePreference
 import rs.clash.android.viewmodel.SettingsViewModel
@@ -57,6 +70,18 @@ fun SettingsScreen(
 ) {
 	var showDarkModeDialog by remember { mutableStateOf(false) }
 	var showLanguageDialog by remember { mutableStateOf(false) }
+	val context = LocalContext.current
+	val activity = context as? MainActivity
+	var hasNotificationPermission by remember {
+		mutableStateOf(PermissionHelper.hasNotificationPermission(context))
+	}
+
+	val notificationPermissionLauncher =
+		rememberLauncherForActivityResult(
+			contract = ActivityResultContracts.RequestPermission(),
+		) { isGranted ->
+			hasNotificationPermission = isGranted
+		}
 
 	Scaffold(
 		topBar = {
@@ -65,7 +90,7 @@ fun SettingsScreen(
 	) { padding ->
 		LazyColumn(
 			modifier =
-				modifier
+				Modifier
 					.fillMaxSize()
 					.padding(padding)
 					.padding(horizontal = 16.dp),
@@ -100,6 +125,65 @@ fun SettingsScreen(
 				}
 			}
 
+			// General Section
+			item {
+				SectionHeader(text = stringResource(R.string.settings_general))
+			}
+
+			item {
+				SettingsCard {
+					SettingsSwitchItem(
+						icon = Icons.Default.Shield,
+						title = stringResource(R.string.settings_foreground_service),
+						subtitle = stringResource(R.string.settings_foreground_service_desc),
+						checked = viewModel.foregroundServiceEnabled,
+						onCheckedChange = { enabled ->
+							viewModel.updateForegroundServiceEnabled(enabled)
+						},
+					)
+
+					// Show notification permission prompt if Android 13+ and foreground service is enabled
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+						viewModel.foregroundServiceEnabled &&
+						!hasNotificationPermission
+					) {
+						HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+						SettingsItem(
+							icon = Icons.Default.Notifications,
+							title = stringResource(R.string.settings_notification_permission),
+							subtitle = stringResource(R.string.settings_notification_permission_required),
+							onClick = {
+								// Request notification permission
+								notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+							},
+							showChevron = true,
+						)
+					}
+
+					HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+					SettingsSwitchItem(
+						icon = Icons.Default.Dns,
+						title = stringResource(R.string.settings_fake_ip),
+						subtitle = stringResource(R.string.settings_fake_ip_desc),
+						checked = viewModel.fakeIpEnabled,
+						onCheckedChange = { enabled ->
+							viewModel.updateFakeIpEnabled(enabled)
+						},
+					)
+
+					HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+					SettingsSwitchItem(
+						icon = Icons.Default.Router,
+						title = stringResource(R.string.settings_ipv6),
+						subtitle = stringResource(R.string.settings_ipv6_desc),
+						checked = viewModel.ipv6Enabled,
+						onCheckedChange = { enabled ->
+							viewModel.updateIpv6Enabled(enabled)
+						},
+					)
+				}
+			}
+
 			// About Section
 			item {
 				SectionHeader(text = stringResource(R.string.settings_about))
@@ -110,7 +194,7 @@ fun SettingsScreen(
 					SettingsItem(
 						icon = Icons.Default.Info,
 						title = stringResource(R.string.settings_version),
-						subtitle = "1.0.0",
+						subtitle = stringResource(R.string.app_ver),
 						onClick = {},
 						showChevron = false,
 					)
@@ -138,8 +222,14 @@ fun SettingsScreen(
 				currentPreference = viewModel.languagePreference,
 				onDismiss = { showLanguageDialog = false },
 				onConfirm = { preference ->
+					val oldPreference = viewModel.languagePreference
 					viewModel.updateLanguagePreference(preference)
 					showLanguageDialog = false
+
+					// Recreate activity if language actually changed to apply new locale
+					if (oldPreference != preference) {
+						activity?.recreate()
+					}
 				},
 			)
 		}
@@ -221,6 +311,53 @@ private fun SettingsItem(
 				tint = MaterialTheme.colorScheme.onSurfaceVariant,
 			)
 		}
+	}
+}
+
+@Composable
+private fun SettingsSwitchItem(
+	icon: ImageVector,
+	title: String,
+	subtitle: String,
+	checked: Boolean,
+	onCheckedChange: (Boolean) -> Unit,
+	modifier: Modifier = Modifier,
+) {
+	Row(
+		modifier =
+			modifier
+				.fillMaxWidth()
+				.padding(16.dp),
+		horizontalArrangement = Arrangement.SpaceBetween,
+		verticalAlignment = Alignment.CenterVertically,
+	) {
+		Row(
+			modifier = Modifier.weight(1f),
+			verticalAlignment = Alignment.CenterVertically,
+			horizontalArrangement = Arrangement.spacedBy(16.dp),
+		) {
+			Icon(
+				imageVector = icon,
+				contentDescription = title,
+				tint = MaterialTheme.colorScheme.primary,
+			)
+			Column {
+				Text(
+					text = title,
+					style = MaterialTheme.typography.bodyLarge,
+					fontWeight = FontWeight.Medium,
+				)
+				Text(
+					text = subtitle,
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.onSurfaceVariant,
+				)
+			}
+		}
+		Switch(
+			checked = checked,
+			onCheckedChange = onCheckedChange,
+		)
 	}
 }
 
@@ -310,17 +447,17 @@ private fun LanguageDialog(
 		text = {
 			Column(modifier = Modifier.selectableGroup()) {
 				LanguageOption(
-					text = "跟随系统",
+					text = stringResource(R.string.language_system),
 					selected = selectedPreference == LanguagePreference.SYSTEM,
 					onClick = { selectedPreference = LanguagePreference.SYSTEM },
 				)
 				LanguageOption(
-					text = "简体中文",
+					text = stringResource(R.string.language_simplified_chinese),
 					selected = selectedPreference == LanguagePreference.SIMPLIFIED_CHINESE,
 					onClick = { selectedPreference = LanguagePreference.SIMPLIFIED_CHINESE },
 				)
 				LanguageOption(
-					text = "English",
+					text = stringResource(R.string.language_english),
 					selected = selectedPreference == LanguagePreference.ENGLISH,
 					onClick = { selectedPreference = LanguagePreference.ENGLISH },
 				)

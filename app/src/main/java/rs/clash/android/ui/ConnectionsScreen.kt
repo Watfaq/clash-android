@@ -1,0 +1,292 @@
+package rs.clash.android.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import rs.clash.android.R
+import rs.clash.android.formatSize
+import rs.clash.android.viewmodel.ConnectionsViewModel
+import uniffi.clash_android_ffi.Connection
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Destination<RootGraph>
+@Composable
+fun ConnectionsScreen(
+	navigator: DestinationsNavigator,
+	modifier: Modifier = Modifier,
+	viewModel: ConnectionsViewModel = viewModel(),
+) {
+	Scaffold(
+		topBar = {
+			TopAppBar(
+				title = { Text(stringResource(R.string.connections_title)) },
+				navigationIcon = {
+					IconButton(onClick = { navigator.navigateUp() }) {
+						Icon(
+							imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+							contentDescription = stringResource(R.string.back),
+						)
+					}
+				},
+			)
+		},
+	) { padding ->
+		ConnectionsContent(
+			connections = viewModel.connections,
+			downloadTotal = viewModel.downloadTotal,
+			uploadTotal = viewModel.uploadTotal,
+			errorMessage = viewModel.errorMessage,
+			modifier = Modifier.padding(padding).fillMaxSize(),
+		)
+	}
+}
+
+@Composable
+fun ConnectionsContent(
+	connections: List<Connection>,
+	downloadTotal: Long,
+	uploadTotal: Long,
+	errorMessage: String?,
+	modifier: Modifier = Modifier,
+) {
+	LazyColumn(
+		modifier = modifier.fillMaxSize(),
+		verticalArrangement = Arrangement.spacedBy(12.dp),
+	) {
+		item { Spacer(modifier = Modifier.height(4.dp)) }
+
+		// Summary Card
+		item(key = "summary") {
+			Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+				Card(
+					modifier = Modifier.fillMaxWidth(),
+					elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+				) {
+					Column(
+						modifier = Modifier.padding(16.dp),
+						verticalArrangement = Arrangement.spacedBy(8.dp),
+					) {
+						Text(
+							text = stringResource(R.string.connections_summary),
+							style = MaterialTheme.typography.titleMedium,
+							fontWeight = FontWeight.Bold,
+						)
+						Row(
+							modifier = Modifier.fillMaxWidth(),
+							horizontalArrangement = Arrangement.SpaceBetween,
+						) {
+							Column {
+								Text(
+									text = stringResource(R.string.connections_count),
+									style = MaterialTheme.typography.bodyMedium,
+									color = MaterialTheme.colorScheme.secondary,
+								)
+								Text(
+									text = "${connections.size}",
+									style = MaterialTheme.typography.titleLarge,
+									fontWeight = FontWeight.Bold,
+									color = MaterialTheme.colorScheme.primary,
+								)
+							}
+							Column(horizontalAlignment = Alignment.End) {
+								Text(
+									text = stringResource(R.string.stat_download),
+									style = MaterialTheme.typography.bodyMedium,
+									color = MaterialTheme.colorScheme.secondary,
+								)
+								Text(
+									text = formatSize(downloadTotal),
+									style = MaterialTheme.typography.titleLarge,
+									fontWeight = FontWeight.Bold,
+									color = MaterialTheme.colorScheme.primary,
+								)
+							}
+							Column(horizontalAlignment = Alignment.End) {
+								Text(
+									text = stringResource(R.string.stat_upload),
+									style = MaterialTheme.typography.bodyMedium,
+									color = MaterialTheme.colorScheme.secondary,
+								)
+								Text(
+									text = formatSize(uploadTotal),
+									style = MaterialTheme.typography.titleLarge,
+									fontWeight = FontWeight.Bold,
+									color = MaterialTheme.colorScheme.primary,
+								)
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Error message
+		if (errorMessage != null) {
+			item(key = "error") {
+				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+					Card(
+						modifier = Modifier.fillMaxWidth(),
+						colors =
+							CardDefaults.cardColors(
+								containerColor = MaterialTheme.colorScheme.errorContainer,
+							),
+					) {
+						Text(
+							text = errorMessage,
+							modifier = Modifier.padding(16.dp),
+							color = MaterialTheme.colorScheme.onErrorContainer,
+						)
+					}
+				}
+			}
+		}
+
+		// Empty state
+		if (connections.isEmpty() && errorMessage == null) {
+			item(key = "empty") {
+				Box(
+					modifier = Modifier.fillMaxWidth().padding(32.dp),
+					contentAlignment = Alignment.Center,
+				) {
+					Text(
+						text = stringResource(R.string.connections_empty),
+						style = MaterialTheme.typography.bodyLarge,
+						color = MaterialTheme.colorScheme.outline,
+					)
+				}
+			}
+		}
+
+		// Connection items
+		items(
+			items = connections,
+			key = { it.id },
+		) { connection ->
+			Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+				ConnectionItem(connection = connection)
+			}
+		}
+
+		item { Spacer(modifier = Modifier.height(4.dp)) }
+	}
+}
+
+@Composable
+fun ConnectionItem(
+	connection: Connection,
+	modifier: Modifier = Modifier,
+) {
+	Card(
+		modifier = modifier.fillMaxWidth(),
+		elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+	) {
+		Column(
+			modifier = Modifier.padding(12.dp),
+			verticalArrangement = Arrangement.spacedBy(6.dp),
+		) {
+			// Host and Type
+			Row(
+				modifier = Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.SpaceBetween,
+				verticalAlignment = Alignment.CenterVertically,
+			) {
+				Text(
+					text = connection.metadata.host.ifEmpty { connection.metadata.destinationIp },
+					style = MaterialTheme.typography.titleSmall,
+					fontWeight = FontWeight.Bold,
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis,
+					modifier = Modifier.weight(1f),
+				)
+				Text(
+					text = connection.metadata.network.uppercase(),
+					style = MaterialTheme.typography.labelSmall,
+					color = MaterialTheme.colorScheme.secondary,
+				)
+			}
+
+			// Destination
+			Text(
+				text = "${connection.metadata.destinationIp}:${connection.metadata.destinationPort}",
+				style = MaterialTheme.typography.bodySmall,
+				color = MaterialTheme.colorScheme.outline,
+			)
+
+			// Source
+			Text(
+				text = stringResource(R.string.connections_source, connection.metadata.sourceIp),
+				style = MaterialTheme.typography.bodySmall,
+				color = MaterialTheme.colorScheme.outline,
+			)
+
+			// Chains (proxy chain)
+			if (connection.chains.isNotEmpty()) {
+				Text(
+					text = stringResource(R.string.connections_chain, connection.chains.joinToString(" → ")),
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.secondary,
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis,
+				)
+			}
+
+			// Rule
+			if (connection.rule.isNotEmpty()) {
+				Text(
+					text = stringResource(R.string.connections_rule, connection.rule),
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.tertiary,
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis,
+				)
+			}
+
+			// Traffic
+			Row(
+				modifier = Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.SpaceBetween,
+			) {
+				Text(
+					text = stringResource(R.string.connections_download, formatSize(connection.download)),
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.primary,
+				)
+				Text(
+					text = stringResource(R.string.connections_upload, formatSize(connection.upload)),
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.primary,
+				)
+			}
+		}
+	}
+}

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.ClashAndroid" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Base application theme that supports both light and dark mode -->
+    <style name="Theme.ClashAndroid" parent="Theme.AppCompat.DayNight.NoActionBar" />
 </resources>

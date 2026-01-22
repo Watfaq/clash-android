@@ -15,8 +15,9 @@ import com.ramcosta.composedestinations.generated.destinations.PanelScreenDestin
 import com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
 import com.ramcosta.composedestinations.rememberNavHostEngine
+import rs.clash.android.theme.ScaleTransitions
 import rs.clash.android.theme.SlideHorizontalTransitions
-import rs.clash.android.ui.BottomBar
+import rs.clash.android.ui.components.BottomBar
 import rs.clash.android.viewmodel.HomeViewModel
 
 @Composable
@@ -53,6 +54,7 @@ fun ClashApp(
 			PanelScreenDestination animateWith SlideHorizontalTransitions
 			ProfileScreenDestination animateWith SlideHorizontalTransitions
 			SettingsScreenDestination animateWith SlideHorizontalTransitions
+			com.ramcosta.composedestinations.generated.destinations.ConnectionsScreenDestination animateWith ScaleTransitions
 		}
 	}
 }

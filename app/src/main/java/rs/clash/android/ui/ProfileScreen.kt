@@ -41,6 +41,7 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.R
+import rs.clash.android.ui.components.TitleBar
 import rs.clash.android.viewmodel.ProfileViewModel
 import java.io.File
 

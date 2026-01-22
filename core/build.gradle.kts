@@ -47,6 +47,7 @@ cargoNdk {
     module  = "uniffi"  // Directory containing Cargo.toml
     librariesNames = arrayListOf("libclash_android_ffi.so")
     extraCargoBuildArguments = arrayListOf("-p", "clash-android-ffi")
+	buildType = "release"
 }
 
 android {

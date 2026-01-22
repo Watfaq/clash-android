@@ -1,11 +1,14 @@
+use async_compat::set_runtime_builder;
 use clash_lib::app::dns;
 
 use clash_lib::app::dns::config::{DNSListenAddr, DNSNetMode, NameServer};
+use clash_lib::config::def::DNSMode;
 use clash_lib::{
     Config,
     config::{config::Controller, def::LogLevel},
     start,
 };
+use once_cell::sync::OnceCell;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::Once,
@@ -24,6 +27,11 @@ type EyreError = eyre::Error;
 #[uniffi::remote(Object)]
 pub struct EyreError;
 
+#[uniffi::export]
+pub fn format_eyre_error(err: &EyreError) -> String {
+    format!("{:#}", err)
+}
+
 #[derive(uniffi::Record)]
 pub struct ProfileOverride {
     pub tun_fd: i32,
@@ -38,11 +46,42 @@ pub struct ProfileOverride {
     pub http_port: u16,
     #[uniffi(default = 7892)]
     pub socks_port: u16,
+    #[uniffi(default = false)]
+    pub fake_ip: bool,
+
+    #[uniffi(default = "198.18.0.2/16")]
+    pub fake_ip_range: String,
+
+    #[uniffi(default = true)]
+    pub ipv6: bool,
 
     #[uniffi(default = true)]
     pub some_flag: bool,
 }
 
+
+
+#[unsafe(export_name = "Java_rs_clash_android_MainActivity_javaInit")]
+pub extern "system" fn java_init(
+    env: jni::JNIEnv,
+    _class: jni::objects::JClass,
+    _app: jni::objects::JObject,
+) {
+    let vm = env.get_java_vm().unwrap();
+    static VM: OnceCell<jni::JavaVM> = OnceCell::new();
+    _ = VM.set(vm);
+    let builder = || {
+        let mut builder = tokio::runtime::Builder::new_multi_thread();
+        builder
+            .on_thread_start(|| {
+                let vm = VM.get().expect("init java vm");
+                vm.attach_current_thread_permanently().unwrap();
+            })
+            .enable_all();
+        builder
+    };
+    set_runtime_builder(Box::new(builder));
+}
 
 #[uniffi::export(async_runtime = "tokio")]
 async fn init_main(
@@ -74,31 +113,77 @@ async fn init_main(
         ..Default::default()
     };
 
+    config.general.ipv6 = over.ipv6;
+
     let nameserver = if config.dns.nameserver.is_empty() {
-        vec![NameServer {
-            net: DNSNetMode::DoT,
-            address: "dns.alidns.com:853".to_string(),
-            interface: None,
-            proxy: None,
-        }]
+        vec![
+            NameServer {
+                net: DNSNetMode::DoH,
+                address: "223.5.5.5:443".to_string(),
+                interface: None,
+                proxy: None,
+            },
+            NameServer {
+                net: DNSNetMode::DoH,
+                address: "223.6.6.6:443".to_string(),
+                interface: None,
+                proxy: None,
+            },
+            NameServer {
+                net: DNSNetMode::DoH,
+                address: "120.53.53.53:443".to_string(),
+                interface: None,
+                proxy: None,
+            },
+            NameServer {
+                net: DNSNetMode::DoH,
+                address: "1.12.12.12:443".to_string(),
+                interface: None,
+                proxy: None,
+            },
+        ]
     } else {
         config.dns.nameserver.clone()
     };
+    let default_nameserver = if config.dns.default_nameserver.is_empty() {
+        vec![
+            NameServer {
+                net: DNSNetMode::Udp,
+                address: "223.6.6.6:53".to_string(),
+                interface: None,
+                proxy: None,
+            },
+            NameServer {
+                net: DNSNetMode::Udp,
+                address: "8.8.8.8:53".to_string(),
+                interface: None,
+                proxy: None,
+            },
+        ]
+    } else {
+        config.dns.default_nameserver.clone()
+    };
+
     config.dns = dns::Config {
         enable: true,
-
+        ipv6: over.ipv6,
         listen: DNSListenAddr {
             udp: Some(SocketAddr::new(
                 IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
                 53553,
             )),
-
             ..config.dns.listen
         },
         nameserver,
-
+        default_nameserver,
         ..config.dns
     };
+    if over.fake_ip {
+        config.dns.enhance_mode = DNSMode::FakeIp;
+        config.dns.fake_ip_range = over.fake_ip_range.parse()?;
+    } else {
+        config.dns.enhance_mode = DNSMode::Normal;
+    }
 
     #[cfg(debug_assertions)]
     {

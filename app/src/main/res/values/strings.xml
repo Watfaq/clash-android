@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">clash android</string>
     <string name="profile_screen">配置</string>
     <string name="home_screen">总览</string>
     <string name="panel_screen">代理</string>
@@ -28,6 +27,11 @@
     <string name="stat_connections_none">无活跃会话</string>
     <string name="stat_download">总下载量</string>
     <string name="stat_upload">总上传量</string>
+    <string name="stat_vpn">VPN</string>
+    <string name="stat_vpn_running">运行中</string>
+    <string name="stat_vpn_stopped">已停止</string>
+    <string name="stat_vpn_hint_stop">点击停止</string>
+    <string name="stat_vpn_hint_start">点击启动</string>
     <string name="test_latency">测试延迟</string>
     <string name="selected">已选择</string>
     <string name="collapse">折叠</string>
@@ -42,9 +46,33 @@
     <string name="settings_appearance">外观</string>
     <string name="settings_dark_mode">深色模式</string>
     <string name="settings_language">语言</string>
+    <string name="settings_general">常规</string>
+    <string name="settings_foreground_service">前台保活</string>
+    <string name="settings_foreground_service_desc">通过前台服务保持应用运行</string>
+    <string name="settings_fake_ip">启用 Fake IP</string>
+    <string name="settings_fake_ip_desc">使用虚拟 IP 地址进行 DNS 解析，提高性能</string>
+    <string name="settings_ipv6">启用 IPv6</string>
+    <string name="settings_ipv6_desc">允许使用 IPv6 协议进行网络连接</string>
+    <string name="settings_notification_permission">通知权限</string>
+    <string name="settings_notification_permission_required">需要通知权限才能显示前台服务通知</string>
     <string name="settings_about">关于</string>
     <string name="settings_version">版本</string>
     <string name="dark_mode_system">跟随系统</string>
     <string name="dark_mode_light">浅色</string>
     <string name="dark_mode_dark">深色</string>
+    <string name="language_system">跟随系统</string>
+    <string name="language_simplified_chinese">简体中文</string>
+    <string name="language_english">English</string>
+
+    <!-- Connections Screen -->
+    <string name="connections_title">活跃连接</string>
+    <string name="connections_summary">连接统计</string>
+    <string name="connections_count">连接数</string>
+    <string name="connections_empty">暂无活跃连接</string>
+    <string name="connections_source">来源: %1$s</string>
+    <string name="connections_chain">代理链: %1$s</string>
+    <string name="connections_rule">规则: %1$s</string>
+    <string name="connections_download">↓ %1$s</string>
+    <string name="connections_upload">↑ %1$s</string>
+    <string name="back">返回</string>
 </resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark theme configuration -->
+    <style name="Theme.ClashAndroid" parent="Theme.AppCompat.NoActionBar">
+        <!-- This will be automatically applied when system is in dark mode -->
+    </style>
+</resources>

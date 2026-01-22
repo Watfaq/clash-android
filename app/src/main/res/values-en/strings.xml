@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_screen">Profile</string>
+    <string name="home_screen">Home</string>
+    <string name="panel_screen">Proxy</string>
+    <string name="settings_screen">Settings</string>
+    <string name="logs_screen">Logs</string>
+    <string name="profile_title">Profile Management</string>
+    <string name="profile_description">Select and import Clash configuration file</string>
+    <string name="choose_file">Choose Configuration</string>
+    <string name="import_file">Import File</string>
+    <string name="current_profile">Current Profile</string>
+    <string name="selected_file">Selected File</string>
+    <string name="no_profile">No profile selected</string>
+    <string name="file_name">File Name</string>
+    <string name="file_path">File Path</string>
+
+    <!-- Home Screen -->
+    <string name="home_title">Overview</string>
+    <string name="refresh">Refresh</string>
+    <string name="no_proxy_groups">No proxy groups found. Is VPN running?</string>
+    <string name="retry">Retry</string>
+    <string name="refreshing">Refreshing...</string>
+    <string name="stat_memory">Memory Usage</string>
+    <string name="stat_memory_limit">Limit: %1$s</string>
+    <string name="stat_connections">Active Connections</string>
+    <string name="stat_connections_ongoing">Ongoing network sessions</string>
+    <string name="stat_connections_none">No active sessions</string>
+    <string name="stat_download">Total Download</string>
+    <string name="stat_upload">Total Upload</string>
+    <string name="stat_vpn">VPN</string>
+    <string name="stat_vpn_running">Running</string>
+    <string name="stat_vpn_stopped">Stopped</string>
+    <string name="stat_vpn_hint_stop">Tap to stop</string>
+    <string name="stat_vpn_hint_start">Tap to start</string>
+    <string name="test_latency">Test Latency</string>
+    <string name="selected">Selected</string>
+    <string name="collapse">Collapse</string>
+    <string name="expand">Expand</string>
+    <string name="testing">Testing...</string>
+    <string name="timeout">Timeout</string>
+    <string name="none">None</string>
+    <string name="not_available">Not Available</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_dark_mode">Dark Mode</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_general">General</string>
+    <string name="settings_foreground_service">Keep Alive</string>
+    <string name="settings_foreground_service_desc">Keep app running via foreground service</string>
+    <string name="settings_fake_ip">Enable Fake IP</string>
+    <string name="settings_fake_ip_desc">Use virtual IP addresses for DNS resolution to improve performance</string>
+    <string name="settings_ipv6">Enable IPv6</string>
+    <string name="settings_ipv6_desc">Allow network connections using IPv6 protocol</string>
+    <string name="settings_notification_permission">Notification Permission</string>
+    <string name="settings_notification_permission_required">Notification permission required to show foreground service notification</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="dark_mode_system">System Default</string>
+    <string name="dark_mode_light">Light</string>
+    <string name="dark_mode_dark">Dark</string>
+    <string name="language_system">System Default</string>
+    <string name="language_simplified_chinese">简体中文</string>
+    <string name="language_english">English</string>
+
+    <!-- Connections Screen -->
+    <string name="connections_title">Active Connections</string>
+    <string name="connections_summary">Connection Statistics</string>
+    <string name="connections_count">Connections</string>
+    <string name="connections_empty">No active connections</string>
+    <string name="connections_source">Source: %1$s</string>
+    <string name="connections_chain">Chain: %1$s</string>
+    <string name="connections_rule">Rule: %1$s</string>
+    <string name="connections_download">↓ %1$s</string>
+    <string name="connections_upload">↑ %1$s</string>
+    <string name="back">Back</string>
+</resources>

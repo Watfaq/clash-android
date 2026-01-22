@@ -1,4 +1,4 @@
-package rs.clash.android.ui
+package rs.clash.android.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

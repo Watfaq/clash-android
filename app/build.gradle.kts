@@ -6,7 +6,7 @@ plugins {
 	alias(libs.plugins.ktlint)
 }
 
-val baseVersionName = "0.1.0"
+val baseVersionName = "0.1.1"
 val Project.verName: String get() = "${baseVersionName}$versionNameSuffix.${exec("git rev-parse --short HEAD")}"
 val Project.verCode: Int get() = exec("git rev-list --count HEAD").toInt()
 val Project.isDevVersion: Boolean get() = exec("git tag -l v$baseVersionName").isEmpty()
@@ -20,10 +20,13 @@ fun Project.exec(command: String): String =
 		.get()
 		.trim()
 
+fun env(key: String): String? = System.getenv(key).let { if (it.isNullOrEmpty()) null else it }
+
 android {
+	val keystore = env("KEYSTORE_FILE")
+
 	namespace = "rs.clash.android"
 	compileSdk = 36
-
 	defaultConfig {
 		applicationId = "rs.clash.android"
 		minSdk = 23
@@ -31,20 +34,28 @@ android {
 		versionCode = verCode
 		versionName = verName
 
+		resValue("string", "app_name", if (keystore == null) "clash android dev" else "clash android")
+		resValue("string", "app_ver", verName)
+
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 		ndk {
 			abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64"))
 		}
+		proguardFiles(
+			getDefaultProguardFile("proguard-android-optimize.txt"),
+			"proguard-rules.pro",
+		)
 	}
-	val keystore = System.getenv("KEYSTORE_FILE") ?: project.findProperty("KEYSTORE_FILE")
 
 	signingConfigs {
-		if (keystore == null) { return@signingConfigs }
+		if (keystore == null) {
+			return@signingConfigs
+		}
 		create("release") {
 			storeFile = file(keystore)
-			storePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD") as? String
-			keyAlias = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS") as? String
-			keyPassword = System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD") as? String
+			storePassword = env("KEYSTORE_PASSWORD")
+			keyAlias = env("KEY_ALIAS")
+			keyPassword = env("KEY_PASSWORD")
 		}
 	}
 
@@ -54,18 +65,12 @@ android {
 			if (keystore != null) {
 				signingConfig = signingConfigs.getByName("release")
 			}
-			proguardFiles(
-				getDefaultProguardFile("proguard-android-optimize.txt"),
-				"proguard-rules.pro",
-			)
-
 		}
 		debug {
 			isMinifyEnabled = false
-			proguardFiles(
-				getDefaultProguardFile("proguard-android-optimize.txt"),
-				"proguard-rules.pro",
-			)
+			if (keystore == null) {
+				applicationIdSuffix = ".dev"
+			}
 		}
 	}
 	compileOptions {
@@ -77,10 +82,10 @@ android {
 	}
 	splits {
 		abi {
-			isEnable = project.hasProperty("android.splits.abi.enable") && project.property("android.splits.abi.enable") == "true"
+			isEnable = env("ANDROID_SPLIT_ABI_ENABLE") == "true"
 			reset()
 			include("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
-			isUniversalApk = project.hasProperty("android.splits.abi.universalApk") && project.property("android.splits.abi.universalApk") == "true"
+			isUniversalApk = env("ANDROID_SPLIT_ABI_UNIVERSAL_APK") == "true"
 		}
 	}
 }
