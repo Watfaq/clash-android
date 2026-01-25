@@ -11,14 +11,17 @@ use clash_lib::{
 use once_cell::sync::OnceCell;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
-    sync::Once,
+    sync::{Arc, Mutex, Once},
 };
 
 use log::init_logger;
-use tokio::{sync::broadcast, task::JoinHandle};
+use tokio::{sync::broadcast, task::AbortHandle};
 use tracing::{error, info};
 
 use clash_lib::config::internal::config::TunConfig;
+
+// Store the abort handle globally to allow shutdown
+static CLASH_TASK_HANDLE: OnceCell<Arc<Mutex<Option<AbortHandle>>>> = OnceCell::new();
 
 pub mod controller;
 pub mod log;
@@ -226,7 +229,10 @@ async fn init_main(
         over.tun_fd, over.log_file_path
     );
 
-    let _: JoinHandle<eyre::Result<()>> = tokio::spawn(async {
+    // Initialize the global handle storage if not already done
+    CLASH_TASK_HANDLE.get_or_init(|| Arc::new(Mutex::new(None)));
+
+    let task_handle: tokio::task::JoinHandle<eyre::Result<()>> = tokio::spawn(async {
         let (log_tx, _) = broadcast::channel(100);
         info!("Starting clash-rs");
         if let Err(err) = start(config, work_dir, log_tx).await {
@@ -236,11 +242,31 @@ async fn init_main(
         info!("Quitting clash-rs");
         Ok(())
     });
+
+    // Store the abort handle
+    if let Some(handle_mutex) = CLASH_TASK_HANDLE.get() {
+        let mut handle = handle_mutex.lock().unwrap();
+        *handle = Some(task_handle.abort_handle());
+    }
+
     Ok(())
 }
 
 #[uniffi::export]
 fn shutdown() {
-    info!("clashrs shutdown");
+    info!("clashrs shutdown called");
+    
+    // Abort the clash-rs task if it exists
+    if let Some(handle_mutex) = CLASH_TASK_HANDLE.get() {
+        let mut handle = handle_mutex.lock().unwrap();
+        if let Some(abort_handle) = handle.take() {
+            info!("Aborting clash-rs task");
+            abort_handle.abort();
+        } else {
+            info!("No clash-rs task to abort");
+        }
+    } else {
+        info!("CLASH_TASK_HANDLE not initialized");
+    }
 }
 uniffi::setup_scaffolding!("clash_android_ffi");
