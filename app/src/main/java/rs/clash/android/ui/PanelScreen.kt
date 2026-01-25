@@ -2,6 +2,9 @@ package rs.clash.android.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -243,6 +246,10 @@ private fun ProxyGroupWidget(
 	var expanded by remember { mutableStateOf(false) }
 	val rotation by animateFloatAsState(
 		targetValue = if (expanded) 180f else 0f,
+		animationSpec = spring(
+			dampingRatio = Spring.DampingRatioMediumBouncy,
+			stiffness = Spring.StiffnessMedium,
+		),
 		label = "rotation",
 	)
 
@@ -308,8 +315,19 @@ private fun ProxyGroupWidget(
 
 			AnimatedVisibility(
 				visible = expanded && proxy.all.isNotEmpty(),
-				enter = expandVertically() + fadeIn(),
-				exit = shrinkVertically() + fadeOut(),
+				enter = expandVertically(
+					animationSpec = spring(
+						dampingRatio = Spring.DampingRatioNoBouncy,
+						stiffness = Spring.StiffnessMediumLow,
+					),
+				) + fadeIn(
+					animationSpec = tween(durationMillis = 300),
+				),
+				exit = shrinkVertically(
+					animationSpec = tween(durationMillis = 250),
+				) + fadeOut(
+					animationSpec = tween(durationMillis = 200),
+				),
 			) {
 				Column {
 					Spacer(modifier = Modifier.height(8.dp))

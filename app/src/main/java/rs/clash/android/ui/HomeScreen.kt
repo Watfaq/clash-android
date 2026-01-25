@@ -3,6 +3,12 @@ package rs.clash.android.ui
 import android.app.Activity.RESULT_OK
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,9 +25,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -30,6 +39,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ConnectionsScreenDestination
@@ -110,52 +120,131 @@ fun OverviewTab(
 		item { Spacer(modifier = Modifier.height(16.dp)) }
 
 		item(key = "vpn") {
-			Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-				StatsCard(
-					title = stringResource(R.string.stat_vpn),
-					value = if (isVpnRunning) stringResource(R.string.stat_vpn_running) else stringResource(R.string.stat_vpn_stopped),
-					subtitle = if (isVpnRunning) stringResource(R.string.stat_vpn_hint_stop) else stringResource(R.string.stat_vpn_hint_start),
-					containerColor = if (isVpnRunning) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
-					onClick = onVpnToggle,
-				)
+			var visible by remember { mutableStateOf(false) }
+			
+			LaunchedEffect(Unit) {
+				delay(50L)
+				visible = true
+			}
+			
+			AnimatedVisibility(
+				visible = visible,
+				enter = slideInVertically(
+					initialOffsetY = { it / 3 },
+					animationSpec = spring(
+						dampingRatio = Spring.DampingRatioMediumBouncy,
+						stiffness = Spring.StiffnessMediumLow,
+					),
+				) + fadeIn(
+					animationSpec = tween(durationMillis = 400),
+				),
+			) {
+				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+					StatsCard(
+						title = stringResource(R.string.stat_vpn),
+						value = if (isVpnRunning) stringResource(R.string.stat_vpn_running) else stringResource(R.string.stat_vpn_stopped),
+						subtitle = if (isVpnRunning) stringResource(R.string.stat_vpn_hint_stop) else stringResource(R.string.stat_vpn_hint_start),
+						containerColor = if (isVpnRunning) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
+						onClick = onVpnToggle,
+					)
+				}
 			}
 		}
 
 		item(key = "memory") {
-			Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-				StatsCard(
-					title = stringResource(R.string.stat_memory),
-					value = memory?.let { formatSize(it.inuse) } ?: stringResource(R.string.not_available),
-					subtitle =
-						memory?.let { stringResource(R.string.stat_memory_limit, formatSize(it.oslimit)) }
-							?: stringResource(R.string.refreshing),
-				)
+			var visible by remember { mutableStateOf(false) }
+			
+			LaunchedEffect(Unit) {
+				delay(100L)
+				visible = true
+			}
+			
+			AnimatedVisibility(
+				visible = visible,
+				enter = slideInVertically(
+					initialOffsetY = { it / 3 },
+					animationSpec = spring(
+						dampingRatio = Spring.DampingRatioMediumBouncy,
+						stiffness = Spring.StiffnessMediumLow,
+					),
+				) + fadeIn(
+					animationSpec = tween(durationMillis = 400),
+				),
+			) {
+				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+					StatsCard(
+						title = stringResource(R.string.stat_memory),
+						value = memory?.let { formatSize(it.inuse) } ?: stringResource(R.string.not_available),
+						subtitle =
+							memory?.let { stringResource(R.string.stat_memory_limit, formatSize(it.oslimit)) }
+								?: stringResource(R.string.refreshing),
+					)
+				}
 			}
 		}
 
 		item(key = "connections") {
-			Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-				StatsCard(
-					title = stringResource(R.string.stat_connections),
-					value = connections.toString(),
-					subtitle =
-						if (connections >
-							0
-						) {
-							stringResource(R.string.stat_connections_ongoing)
-						} else {
-							stringResource(R.string.stat_connections_none)
-						},
-					onClick = onConnectionsClick,
-				)
+			var visible by remember { mutableStateOf(false) }
+			
+			LaunchedEffect(Unit) {
+				delay(150L)
+				visible = true
+			}
+			
+			AnimatedVisibility(
+				visible = visible,
+				enter = slideInVertically(
+					initialOffsetY = { it / 3 },
+					animationSpec = spring(
+						dampingRatio = Spring.DampingRatioMediumBouncy,
+						stiffness = Spring.StiffnessMediumLow,
+					),
+				) + fadeIn(
+					animationSpec = tween(durationMillis = 400),
+				),
+			) {
+				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+					StatsCard(
+						title = stringResource(R.string.stat_connections),
+						value = connections.toString(),
+						subtitle =
+							if (connections >
+								0
+							) {
+								stringResource(R.string.stat_connections_ongoing)
+							} else {
+								stringResource(R.string.stat_connections_none)
+							},
+						onClick = onConnectionsClick,
+					)
+				}
 			}
 		}
 
 		item(key = "bandwidth") {
-			Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-				Row(
-					modifier = Modifier.fillMaxWidth(),
-					horizontalArrangement = Arrangement.spacedBy(12.dp),
+			var visible by remember { mutableStateOf(false) }
+			
+			LaunchedEffect(Unit) {
+				delay(200L)
+				visible = true
+			}
+			
+			AnimatedVisibility(
+				visible = visible,
+				enter = slideInVertically(
+					initialOffsetY = { it / 3 },
+					animationSpec = spring(
+						dampingRatio = Spring.DampingRatioMediumBouncy,
+						stiffness = Spring.StiffnessMediumLow,
+					),
+				) + fadeIn(
+					animationSpec = tween(durationMillis = 400),
+				),
+			) {
+				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+					Row(
+						modifier = Modifier.fillMaxWidth(),
+						horizontalArrangement = Arrangement.spacedBy(12.dp),
 				) {
 					StatsCard(
 						title = stringResource(R.string.stat_download),
@@ -168,6 +257,7 @@ fun OverviewTab(
 						modifier = Modifier.weight(1f),
 					)
 				}
+			}
 			}
 		}
 

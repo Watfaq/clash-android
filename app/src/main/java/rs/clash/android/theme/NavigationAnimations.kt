@@ -4,41 +4,66 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.navigation.NavBackStackEntry
 import com.ramcosta.composedestinations.spec.DestinationStyle
 import rs.clash.android.ui.components.BottomBarItem
 
 object ScaleTransitions : DestinationStyle.Animated() {
 	override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-		scaleIn(
-			initialScale = 0.8f,
-			animationSpec = tween(300),
-		) + fadeIn(animationSpec = tween(300))
+		slideInVertically(
+			initialOffsetY = { it / 3 },
+			animationSpec = spring(
+				dampingRatio = Spring.DampingRatioMediumBouncy,
+				stiffness = Spring.StiffnessLow,
+			),
+		) + fadeIn(
+			animationSpec = tween(
+				durationMillis = 300,
+				easing = FastOutSlowInEasing,
+			),
+		)
 	}
 
 	override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-		scaleOut(
-			targetScale = 1.1f,
-			animationSpec = tween(300),
-		) + fadeOut(animationSpec = tween(300))
+		fadeOut(
+			animationSpec = tween(
+				durationMillis = 200,
+				easing = FastOutSlowInEasing,
+			),
+		)
 	}
 
 	override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
-		scaleIn(
-			initialScale = 1.1f,
-			animationSpec = tween(300),
-		) + fadeIn(animationSpec = tween(300))
+		fadeIn(
+			animationSpec = tween(
+				durationMillis = 200,
+				easing = FastOutSlowInEasing,
+			),
+		)
 	}
 
 	override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
-		scaleOut(
-			targetScale = 0.8f,
-			animationSpec = tween(300),
-		) + fadeOut(animationSpec = tween(300))
+		slideOutVertically(
+			targetOffsetY = { it / 3 },
+			animationSpec = tween(
+				durationMillis = 300,
+				easing = FastOutSlowInEasing,
+			),
+		) + fadeOut(
+			animationSpec = tween(
+				durationMillis = 250,
+				easing = FastOutSlowInEasing,
+			),
+		)
 	}
 }
 
@@ -58,7 +83,15 @@ object SlideHorizontalTransitions : DestinationStyle.Animated() {
 		
 		slideIntoContainer(
 			towards = direction,
-			animationSpec = tween(300),
+			animationSpec = spring(
+				dampingRatio = Spring.DampingRatioNoBouncy,
+				stiffness = Spring.StiffnessMedium,
+			),
+		) + fadeIn(
+			animationSpec = tween(
+				durationMillis = 220,
+				easing = FastOutSlowInEasing,
+			),
 		)
 	}
 
@@ -75,21 +108,45 @@ object SlideHorizontalTransitions : DestinationStyle.Animated() {
 		
 		slideOutOfContainer(
 			towards = direction,
-			animationSpec = tween(300),
+			animationSpec = spring(
+				dampingRatio = Spring.DampingRatioNoBouncy,
+				stiffness = Spring.StiffnessMedium,
+			),
+		) + fadeOut(
+			animationSpec = tween(
+				durationMillis = 220,
+				easing = FastOutSlowInEasing,
+			),
 		)
 	}
 
 	override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
 		slideIntoContainer(
 			towards = AnimatedContentTransitionScope.SlideDirection.Right,
-			animationSpec = tween(300),
+			animationSpec = spring(
+				dampingRatio = Spring.DampingRatioNoBouncy,
+				stiffness = Spring.StiffnessMedium,
+			),
+		) + fadeIn(
+			animationSpec = tween(
+				durationMillis = 220,
+				easing = FastOutSlowInEasing,
+			),
 		)
 	}
 
 	override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
 		slideOutOfContainer(
 			towards = AnimatedContentTransitionScope.SlideDirection.Right,
-			animationSpec = tween(300),
+			animationSpec = spring(
+				dampingRatio = Spring.DampingRatioNoBouncy,
+				stiffness = Spring.StiffnessMedium,
+			),
+		) + fadeOut(
+			animationSpec = tween(
+				durationMillis = 220,
+				easing = FastOutSlowInEasing,
+			),
 		)
 	}
 }
