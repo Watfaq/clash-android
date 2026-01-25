@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeGestures
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,12 +59,12 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.MainActivity
 import rs.clash.android.R
-import rs.clash.android.ui.components.TitleBar
 import rs.clash.android.util.PermissionHelper
 import rs.clash.android.viewmodel.DarkModePreference
 import rs.clash.android.viewmodel.LanguagePreference
 import rs.clash.android.viewmodel.SettingsViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>
 @Composable
 fun SettingsScreen(
@@ -85,15 +89,19 @@ fun SettingsScreen(
 
 	Scaffold(
 		topBar = {
-			TitleBar(title = stringResource(R.string.settings_title))
+			TopAppBar(
+				title = {
+					Text(stringResource(R.string.settings_title))
+				},
+				windowInsets = WindowInsets(),
+			)
 		},
 	) { padding ->
 		LazyColumn(
 			modifier =
 				Modifier
-					.fillMaxSize()
 					.padding(padding)
-					.padding(horizontal = 16.dp),
+					.fillMaxSize(),
 			verticalArrangement = Arrangement.spacedBy(12.dp),
 		) {
 			item { Spacer(modifier = Modifier.height(4.dp)) }

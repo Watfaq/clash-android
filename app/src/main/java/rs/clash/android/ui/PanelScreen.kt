@@ -1,8 +1,8 @@
 package rs.clash.android.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +32,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -60,7 +63,6 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.R
-import rs.clash.android.ui.components.TitleBar
 import rs.clash.android.viewmodel.HomeViewModel
 import uniffi.clash_android_ffi.Proxy
 
@@ -70,6 +72,7 @@ private const val DELAY_GOOD_MS = 600
 private const val PROXY_COLUMNS = 2
 
 @Destination<RootGraph>
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PanelScreen(
 	navigator: DestinationsNavigator,
@@ -78,8 +81,9 @@ fun PanelScreen(
 ) {
 	Scaffold(
 		topBar = {
-			TitleBar(
-				buttons = {
+			TopAppBar(
+				title = { Text(stringResource(R.string.panel_screen)) },
+				actions = {
 					IconButton(onClick = { viewModel.fetchProxies() }) {
 						Icon(
 							imageVector = Icons.Default.Refresh,
@@ -87,7 +91,7 @@ fun PanelScreen(
 						)
 					}
 				},
-				title = stringResource(R.string.panel_screen),
+				windowInsets = WindowInsets(),
 			)
 		},
 	) { padding ->
@@ -246,10 +250,11 @@ private fun ProxyGroupWidget(
 	var expanded by remember { mutableStateOf(false) }
 	val rotation by animateFloatAsState(
 		targetValue = if (expanded) 180f else 0f,
-		animationSpec = spring(
-			dampingRatio = Spring.DampingRatioMediumBouncy,
-			stiffness = Spring.StiffnessMedium,
-		),
+		animationSpec =
+			spring(
+				dampingRatio = Spring.DampingRatioMediumBouncy,
+				stiffness = Spring.StiffnessMedium,
+			),
 		label = "rotation",
 	)
 
@@ -315,19 +320,24 @@ private fun ProxyGroupWidget(
 
 			AnimatedVisibility(
 				visible = expanded && proxy.all.isNotEmpty(),
-				enter = expandVertically(
-					animationSpec = spring(
-						dampingRatio = Spring.DampingRatioNoBouncy,
-						stiffness = Spring.StiffnessMediumLow,
-					),
-				) + fadeIn(
-					animationSpec = tween(durationMillis = 300),
-				),
-				exit = shrinkVertically(
-					animationSpec = tween(durationMillis = 250),
-				) + fadeOut(
-					animationSpec = tween(durationMillis = 200),
-				),
+				enter =
+					expandVertically(
+						animationSpec =
+							spring(
+								dampingRatio = Spring.DampingRatioNoBouncy,
+								stiffness = Spring.StiffnessMediumLow,
+							),
+					) +
+						fadeIn(
+							animationSpec = tween(durationMillis = 300),
+						),
+				exit =
+					shrinkVertically(
+						animationSpec = tween(durationMillis = 250),
+					) +
+						fadeOut(
+							animationSpec = tween(durationMillis = 200),
+						),
 			) {
 				Column {
 					Spacer(modifier = Modifier.height(8.dp))

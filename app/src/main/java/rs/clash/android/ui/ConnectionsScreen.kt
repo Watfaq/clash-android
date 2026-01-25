@@ -11,10 +11,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -42,10 +41,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.delay
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import kotlinx.coroutines.delay
 import rs.clash.android.R
 import rs.clash.android.formatSize
 import rs.clash.android.viewmodel.ConnectionsViewModel
@@ -62,7 +61,6 @@ fun ConnectionsScreen(
 	Scaffold(
 		topBar = {
 			TopAppBar(
-				title = { Text(stringResource(R.string.connections_title)) },
 				navigationIcon = {
 					IconButton(onClick = { navigator.navigateUp() }) {
 						Icon(
@@ -71,6 +69,10 @@ fun ConnectionsScreen(
 						)
 					}
 				},
+				title = {
+					Text(stringResource(R.string.connections_title))
+				},
+				windowInsets = WindowInsets(0, 0, 0, 0),
 			)
 		},
 	) { padding ->
@@ -96,8 +98,6 @@ fun ConnectionsContent(
 		modifier = modifier.fillMaxSize(),
 		verticalArrangement = Arrangement.spacedBy(12.dp),
 	) {
-		item { Spacer(modifier = Modifier.height(4.dp)) }
-
 		// Summary Card
 		item(key = "summary") {
 			Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -214,15 +214,18 @@ fun ConnectionsContent(
 			
 			AnimatedVisibility(
 				visible = visible,
-				enter = slideInVertically(
-					initialOffsetY = { it / 4 },
-					animationSpec = spring(
-						dampingRatio = Spring.DampingRatioMediumBouncy,
-						stiffness = Spring.StiffnessMediumLow,
-					),
-				) + fadeIn(
-					animationSpec = tween(durationMillis = 300),
-				),
+				enter =
+					slideInVertically(
+						initialOffsetY = { it / 4 },
+						animationSpec =
+							spring(
+								dampingRatio = Spring.DampingRatioMediumBouncy,
+								stiffness = Spring.StiffnessMediumLow,
+							),
+					) +
+						fadeIn(
+							animationSpec = tween(durationMillis = 300),
+						),
 				exit = fadeOut(animationSpec = tween(durationMillis = 200)),
 			) {
 				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -230,8 +233,6 @@ fun ConnectionsContent(
 				}
 			}
 		}
-
-		item { Spacer(modifier = Modifier.height(4.dp)) }
 	}
 }
 

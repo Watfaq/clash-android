@@ -42,8 +42,9 @@ urlencoding = "2"
 
 [dependencies.clash-lib]
 package = "clash-lib"
-branch = "master"
-git = "https://github.com/Watfaq/clash-rs.git"
+#branch = "fix/group-latency"
+#git = "https://github.com/Watfaq/clash-rs.git"
+path = "../../../clash-rs/clash-lib"
 features = [
     "tuic", 
     "shadowquic",

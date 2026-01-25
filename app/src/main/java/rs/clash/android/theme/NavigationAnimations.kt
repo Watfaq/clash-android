@@ -3,14 +3,12 @@ package rs.clash.android.theme
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.navigation.NavBackStackEntry
@@ -21,49 +19,57 @@ object ScaleTransitions : DestinationStyle.Animated() {
 	override val enterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
 		slideInVertically(
 			initialOffsetY = { it / 3 },
-			animationSpec = spring(
-				dampingRatio = Spring.DampingRatioMediumBouncy,
-				stiffness = Spring.StiffnessLow,
-			),
-		) + fadeIn(
-			animationSpec = tween(
-				durationMillis = 300,
-				easing = FastOutSlowInEasing,
-			),
-		)
+			animationSpec =
+				spring(
+					dampingRatio = Spring.DampingRatioMediumBouncy,
+					stiffness = Spring.StiffnessLow,
+				),
+		) +
+			fadeIn(
+				animationSpec =
+					tween(
+						durationMillis = 300,
+						easing = FastOutSlowInEasing,
+					),
+			)
 	}
 
 	override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
 		fadeOut(
-			animationSpec = tween(
-				durationMillis = 200,
-				easing = FastOutSlowInEasing,
-			),
+			animationSpec =
+				tween(
+					durationMillis = 200,
+					easing = FastOutSlowInEasing,
+				),
 		)
 	}
 
 	override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
 		fadeIn(
-			animationSpec = tween(
-				durationMillis = 200,
-				easing = FastOutSlowInEasing,
-			),
+			animationSpec =
+				tween(
+					durationMillis = 200,
+					easing = FastOutSlowInEasing,
+				),
 		)
 	}
 
 	override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
 		slideOutVertically(
 			targetOffsetY = { it / 3 },
-			animationSpec = tween(
-				durationMillis = 300,
-				easing = FastOutSlowInEasing,
-			),
-		) + fadeOut(
-			animationSpec = tween(
-				durationMillis = 250,
-				easing = FastOutSlowInEasing,
-			),
-		)
+			animationSpec =
+				tween(
+					durationMillis = 300,
+					easing = FastOutSlowInEasing,
+				),
+		) +
+			fadeOut(
+				animationSpec =
+					tween(
+						durationMillis = 250,
+						easing = FastOutSlowInEasing,
+					),
+			)
 	}
 }
 
@@ -83,16 +89,19 @@ object SlideHorizontalTransitions : DestinationStyle.Animated() {
 		
 		slideIntoContainer(
 			towards = direction,
-			animationSpec = spring(
-				dampingRatio = Spring.DampingRatioNoBouncy,
-				stiffness = Spring.StiffnessMedium,
-			),
-		) + fadeIn(
-			animationSpec = tween(
-				durationMillis = 220,
-				easing = FastOutSlowInEasing,
-			),
-		)
+			animationSpec =
+				spring(
+					dampingRatio = Spring.DampingRatioNoBouncy,
+					stiffness = Spring.StiffnessMedium,
+				),
+		) +
+			fadeIn(
+				animationSpec =
+					tween(
+						durationMillis = 220,
+						easing = FastOutSlowInEasing,
+					),
+			)
 	}
 
 	override val exitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
@@ -108,45 +117,54 @@ object SlideHorizontalTransitions : DestinationStyle.Animated() {
 		
 		slideOutOfContainer(
 			towards = direction,
-			animationSpec = spring(
-				dampingRatio = Spring.DampingRatioNoBouncy,
-				stiffness = Spring.StiffnessMedium,
-			),
-		) + fadeOut(
-			animationSpec = tween(
-				durationMillis = 220,
-				easing = FastOutSlowInEasing,
-			),
-		)
+			animationSpec =
+				spring(
+					dampingRatio = Spring.DampingRatioNoBouncy,
+					stiffness = Spring.StiffnessMedium,
+				),
+		) +
+			fadeOut(
+				animationSpec =
+					tween(
+						durationMillis = 220,
+						easing = FastOutSlowInEasing,
+					),
+			)
 	}
 
 	override val popEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
 		slideIntoContainer(
 			towards = AnimatedContentTransitionScope.SlideDirection.Right,
-			animationSpec = spring(
-				dampingRatio = Spring.DampingRatioNoBouncy,
-				stiffness = Spring.StiffnessMedium,
-			),
-		) + fadeIn(
-			animationSpec = tween(
-				durationMillis = 220,
-				easing = FastOutSlowInEasing,
-			),
-		)
+			animationSpec =
+				spring(
+					dampingRatio = Spring.DampingRatioNoBouncy,
+					stiffness = Spring.StiffnessMedium,
+				),
+		) +
+			fadeIn(
+				animationSpec =
+					tween(
+						durationMillis = 220,
+						easing = FastOutSlowInEasing,
+					),
+			)
 	}
 
 	override val popExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
 		slideOutOfContainer(
 			towards = AnimatedContentTransitionScope.SlideDirection.Right,
-			animationSpec = spring(
-				dampingRatio = Spring.DampingRatioNoBouncy,
-				stiffness = Spring.StiffnessMedium,
-			),
-		) + fadeOut(
-			animationSpec = tween(
-				durationMillis = 220,
-				easing = FastOutSlowInEasing,
-			),
-		)
+			animationSpec =
+				spring(
+					dampingRatio = Spring.DampingRatioNoBouncy,
+					stiffness = Spring.StiffnessMedium,
+				),
+		) +
+			fadeOut(
+				animationSpec =
+					tween(
+						durationMillis = 220,
+						easing = FastOutSlowInEasing,
+					),
+			)
 	}
 }

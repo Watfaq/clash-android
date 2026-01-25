@@ -787,7 +787,6 @@ dependencies = [
 [[package]]
 name = "clash-lib"
 version = "0.9.4"
-source = "git+https://github.com/Watfaq/clash-rs.git?branch=master#001aa4107b9b9b33ae2d53da103aaf2e14e6dad1"
 dependencies = [
  "aead",
  "aes",
@@ -5960,7 +5959,6 @@ dependencies = [
 [[package]]
 name = "watfaq-dns"
 version = "0.9.4"
-source = "git+https://github.com/Watfaq/clash-rs.git?branch=master#001aa4107b9b9b33ae2d53da103aaf2e14e6dad1"
 dependencies = [
  "async-trait",
  "futures",
@@ -5979,7 +5977,6 @@ dependencies = [
 [[package]]
 name = "watfaq-netstack"
 version = "0.1.0"
-source = "git+https://github.com/Watfaq/clash-rs.git?branch=master#001aa4107b9b9b33ae2d53da103aaf2e14e6dad1"
 dependencies = [
  "bytes",
  "etherparse",
