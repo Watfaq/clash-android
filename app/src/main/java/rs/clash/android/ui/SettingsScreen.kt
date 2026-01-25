@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeGestures
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -101,6 +100,7 @@ fun SettingsScreen(
 			modifier =
 				Modifier
 					.padding(padding)
+					.padding(horizontal = 16.dp)
 					.fillMaxSize(),
 			verticalArrangement = Arrangement.spacedBy(12.dp),
 		) {

@@ -3,14 +3,7 @@ package rs.clash.android.ui
 import android.app.Activity.RESULT_OK
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,8 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeGestures
-import androidx.compose.foundation.layout.waterfall
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,10 +21,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -48,7 +37,6 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.ConnectionsScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import kotlinx.coroutines.delay
 import rs.clash.android.R
 import rs.clash.android.formatSize
 import rs.clash.android.viewmodel.HomeViewModel
@@ -121,162 +109,65 @@ fun OverviewTab(
 	onConnectionsClick: () -> Unit = {},
 ) {
 	LazyColumn(
-		modifier = modifier.fillMaxSize(),
+		modifier =
+			modifier
+				.padding(horizontal = 16.dp)
+				.fillMaxSize(),
 		verticalArrangement = Arrangement.spacedBy(12.dp),
 	) {
 		item { Spacer(modifier = Modifier.height(16.dp)) }
 
 		item(key = "vpn") {
-			var visible by remember { mutableStateOf(false) }
-			
-			LaunchedEffect(Unit) {
-				delay(50L)
-				visible = true
-			}
-			
-			AnimatedVisibility(
-				visible = visible,
-				enter =
-					slideInVertically(
-						initialOffsetY = { it / 3 },
-						animationSpec =
-							spring(
-								dampingRatio = Spring.DampingRatioMediumBouncy,
-								stiffness = Spring.StiffnessMediumLow,
-							),
-					) +
-						fadeIn(
-							animationSpec = tween(durationMillis = 400),
-						),
-			) {
-				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-					StatsCard(
-						title = stringResource(R.string.stat_vpn),
-						value = if (isVpnRunning) stringResource(R.string.stat_vpn_running) else stringResource(R.string.stat_vpn_stopped),
-						subtitle = if (isVpnRunning) stringResource(R.string.stat_vpn_hint_stop) else stringResource(R.string.stat_vpn_hint_start),
-						containerColor = if (isVpnRunning) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
-						onClick = onVpnToggle,
-					)
-				}
-			}
+			StatsCard(
+				title = stringResource(R.string.stat_vpn),
+				value = if (isVpnRunning) stringResource(R.string.stat_vpn_running) else stringResource(R.string.stat_vpn_stopped),
+				subtitle = if (isVpnRunning) stringResource(R.string.stat_vpn_hint_stop) else stringResource(R.string.stat_vpn_hint_start),
+				containerColor = if (isVpnRunning) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
+				onClick = onVpnToggle,
+			)
 		}
 
 		item(key = "memory") {
-			var visible by remember { mutableStateOf(false) }
-			
-			LaunchedEffect(Unit) {
-				delay(100L)
-				visible = true
-			}
-			
-			AnimatedVisibility(
-				visible = visible,
-				enter =
-					slideInVertically(
-						initialOffsetY = { it / 3 },
-						animationSpec =
-							spring(
-								dampingRatio = Spring.DampingRatioMediumBouncy,
-								stiffness = Spring.StiffnessMediumLow,
-							),
-					) +
-						fadeIn(
-							animationSpec = tween(durationMillis = 400),
-						),
-			) {
-				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-					StatsCard(
-						title = stringResource(R.string.stat_memory),
-						value = memory?.let { formatSize(it.inuse) } ?: stringResource(R.string.not_available),
-						subtitle =
-							memory?.let { stringResource(R.string.stat_memory_limit, formatSize(it.oslimit)) }
-								?: stringResource(R.string.refreshing),
-					)
-				}
-			}
+			StatsCard(
+				title = stringResource(R.string.stat_memory),
+				value = memory?.let { formatSize(it.inuse) } ?: stringResource(R.string.not_available),
+				subtitle =
+					memory?.let { stringResource(R.string.stat_memory_limit, formatSize(it.oslimit)) }
+						?: stringResource(R.string.refreshing),
+			)
 		}
 
 		item(key = "connections") {
-			var visible by remember { mutableStateOf(false) }
-			
-			LaunchedEffect(Unit) {
-				delay(150L)
-				visible = true
-			}
-			
-			AnimatedVisibility(
-				visible = visible,
-				enter =
-					slideInVertically(
-						initialOffsetY = { it / 3 },
-						animationSpec =
-							spring(
-								dampingRatio = Spring.DampingRatioMediumBouncy,
-								stiffness = Spring.StiffnessMediumLow,
-							),
-					) +
-						fadeIn(
-							animationSpec = tween(durationMillis = 400),
-						),
-			) {
-				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-					StatsCard(
-						title = stringResource(R.string.stat_connections),
-						value = connections.toString(),
-						subtitle =
-							if (connections >
-								0
-							) {
-								stringResource(R.string.stat_connections_ongoing)
-							} else {
-								stringResource(R.string.stat_connections_none)
-							},
-						onClick = onConnectionsClick,
-					)
-				}
-			}
+			StatsCard(
+				title = stringResource(R.string.stat_connections),
+				value = connections.toString(),
+				subtitle =
+					if (connections >
+						0
+					) {
+						stringResource(R.string.stat_connections_ongoing)
+					} else {
+						stringResource(R.string.stat_connections_none)
+					},
+				onClick = onConnectionsClick,
+			)
 		}
 
 		item(key = "bandwidth") {
-			var visible by remember { mutableStateOf(false) }
-			
-			LaunchedEffect(Unit) {
-				delay(200L)
-				visible = true
-			}
-			
-			AnimatedVisibility(
-				visible = visible,
-				enter =
-					slideInVertically(
-						initialOffsetY = { it / 3 },
-						animationSpec =
-							spring(
-								dampingRatio = Spring.DampingRatioMediumBouncy,
-								stiffness = Spring.StiffnessMediumLow,
-							),
-					) +
-						fadeIn(
-							animationSpec = tween(durationMillis = 400),
-						),
+			Row(
+				modifier = Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.spacedBy(12.dp),
 			) {
-				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-					Row(
-						modifier = Modifier.fillMaxWidth(),
-						horizontalArrangement = Arrangement.spacedBy(12.dp),
-					) {
-						StatsCard(
-							title = stringResource(R.string.stat_download),
-							value = formatSize(download),
-							modifier = Modifier.weight(1f),
-						)
-						StatsCard(
-							title = stringResource(R.string.stat_upload),
-							value = formatSize(upload),
-							modifier = Modifier.weight(1f),
-						)
-					}
-				}
+				StatsCard(
+					title = stringResource(R.string.stat_download),
+					value = formatSize(download),
+					modifier = Modifier.weight(1f),
+				)
+				StatsCard(
+					title = stringResource(R.string.stat_upload),
+					value = formatSize(upload),
+					modifier = Modifier.weight(1f),
+				)
 			}
 		}
 

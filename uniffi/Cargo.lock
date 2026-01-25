@@ -787,6 +787,7 @@ dependencies = [
 [[package]]
 name = "clash-lib"
 version = "0.9.4"
+source = "git+https://github.com/Watfaq/clash-rs.git?branch=fix%2Fgroup-latency#0f53f73604f3d8a1957749e81d3a234d455ed523"
 dependencies = [
  "aead",
  "aes",
@@ -5959,6 +5960,7 @@ dependencies = [
 [[package]]
 name = "watfaq-dns"
 version = "0.9.4"
+source = "git+https://github.com/Watfaq/clash-rs.git?branch=fix%2Fgroup-latency#0f53f73604f3d8a1957749e81d3a234d455ed523"
 dependencies = [
  "async-trait",
  "futures",
@@ -5977,6 +5979,7 @@ dependencies = [
 [[package]]
 name = "watfaq-netstack"
 version = "0.1.0"
+source = "git+https://github.com/Watfaq/clash-rs.git?branch=fix%2Fgroup-latency#0f53f73604f3d8a1957749e81d3a234d455ed523"
 dependencies = [
  "bytes",
  "etherparse",

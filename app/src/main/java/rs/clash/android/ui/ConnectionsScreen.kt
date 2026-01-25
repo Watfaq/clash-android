@@ -95,68 +95,69 @@ fun ConnectionsContent(
 	modifier: Modifier = Modifier,
 ) {
 	LazyColumn(
-		modifier = modifier.fillMaxSize(),
+		modifier =
+			modifier
+				.fillMaxSize()
+				.padding(horizontal = 16.dp),
 		verticalArrangement = Arrangement.spacedBy(12.dp),
 	) {
 		// Summary Card
 		item(key = "summary") {
-			Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-				Card(
-					modifier = Modifier.fillMaxWidth(),
-					elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+			Card(
+				modifier = Modifier.fillMaxWidth(),
+				elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+			) {
+				Column(
+					modifier = Modifier.padding(16.dp),
+					verticalArrangement = Arrangement.spacedBy(8.dp),
 				) {
-					Column(
-						modifier = Modifier.padding(16.dp),
-						verticalArrangement = Arrangement.spacedBy(8.dp),
+					Text(
+						text = stringResource(R.string.connections_summary),
+						style = MaterialTheme.typography.titleMedium,
+						fontWeight = FontWeight.Bold,
+					)
+					Row(
+						modifier = Modifier.fillMaxWidth(),
+						horizontalArrangement = Arrangement.SpaceBetween,
 					) {
-						Text(
-							text = stringResource(R.string.connections_summary),
-							style = MaterialTheme.typography.titleMedium,
-							fontWeight = FontWeight.Bold,
-						)
-						Row(
-							modifier = Modifier.fillMaxWidth(),
-							horizontalArrangement = Arrangement.SpaceBetween,
-						) {
-							Column {
-								Text(
-									text = stringResource(R.string.connections_count),
-									style = MaterialTheme.typography.bodyMedium,
-									color = MaterialTheme.colorScheme.secondary,
-								)
-								Text(
-									text = "${connections.size}",
-									style = MaterialTheme.typography.titleLarge,
-									fontWeight = FontWeight.Bold,
-									color = MaterialTheme.colorScheme.primary,
-								)
-							}
-							Column(horizontalAlignment = Alignment.End) {
-								Text(
-									text = stringResource(R.string.stat_download),
-									style = MaterialTheme.typography.bodyMedium,
-									color = MaterialTheme.colorScheme.secondary,
-								)
-								Text(
-									text = formatSize(downloadTotal),
-									style = MaterialTheme.typography.titleLarge,
-									fontWeight = FontWeight.Bold,
-									color = MaterialTheme.colorScheme.primary,
-								)
-							}
-							Column(horizontalAlignment = Alignment.End) {
-								Text(
-									text = stringResource(R.string.stat_upload),
-									style = MaterialTheme.typography.bodyMedium,
-									color = MaterialTheme.colorScheme.secondary,
-								)
-								Text(
-									text = formatSize(uploadTotal),
-									style = MaterialTheme.typography.titleLarge,
-									fontWeight = FontWeight.Bold,
-									color = MaterialTheme.colorScheme.primary,
-								)
-							}
+						Column {
+							Text(
+								text = stringResource(R.string.connections_count),
+								style = MaterialTheme.typography.bodyMedium,
+								color = MaterialTheme.colorScheme.secondary,
+							)
+							Text(
+								text = "${connections.size}",
+								style = MaterialTheme.typography.titleLarge,
+								fontWeight = FontWeight.Bold,
+								color = MaterialTheme.colorScheme.primary,
+							)
+						}
+						Column(horizontalAlignment = Alignment.End) {
+							Text(
+								text = stringResource(R.string.stat_download),
+								style = MaterialTheme.typography.bodyMedium,
+								color = MaterialTheme.colorScheme.secondary,
+							)
+							Text(
+								text = formatSize(downloadTotal),
+								style = MaterialTheme.typography.titleLarge,
+								fontWeight = FontWeight.Bold,
+								color = MaterialTheme.colorScheme.primary,
+							)
+						}
+						Column(horizontalAlignment = Alignment.End) {
+							Text(
+								text = stringResource(R.string.stat_upload),
+								style = MaterialTheme.typography.bodyMedium,
+								color = MaterialTheme.colorScheme.secondary,
+							)
+							Text(
+								text = formatSize(uploadTotal),
+								style = MaterialTheme.typography.titleLarge,
+								fontWeight = FontWeight.Bold,
+								color = MaterialTheme.colorScheme.primary,
+							)
 						}
 					}
 				}
@@ -166,20 +167,18 @@ fun ConnectionsContent(
 		// Error message
 		if (errorMessage != null) {
 			item(key = "error") {
-				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-					Card(
-						modifier = Modifier.fillMaxWidth(),
-						colors =
-							CardDefaults.cardColors(
-								containerColor = MaterialTheme.colorScheme.errorContainer,
-							),
-					) {
-						Text(
-							text = errorMessage,
-							modifier = Modifier.padding(16.dp),
-							color = MaterialTheme.colorScheme.onErrorContainer,
-						)
-					}
+				Card(
+					modifier = Modifier.fillMaxWidth(),
+					colors =
+						CardDefaults.cardColors(
+							containerColor = MaterialTheme.colorScheme.errorContainer,
+						),
+				) {
+					Text(
+						text = errorMessage,
+						modifier = Modifier.padding(16.dp),
+						color = MaterialTheme.colorScheme.onErrorContainer,
+					)
 				}
 			}
 		}
@@ -228,9 +227,7 @@ fun ConnectionsContent(
 						),
 				exit = fadeOut(animationSpec = tween(durationMillis = 200)),
 			) {
-				Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-					ConnectionItem(connection = connection)
-				}
+				ConnectionItem(connection = connection)
 			}
 		}
 	}
