@@ -34,7 +34,6 @@ class MainActivity : ComponentActivity() {
 		super.onCreate(savedInstanceState)
 		System.loadLibrary("clash_android_ffi")
 		javaInit()
-		Global.init(application)
 
 		// Apply language preference
 		applyLanguagePreference()
