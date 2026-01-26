@@ -142,7 +142,7 @@ jobs:
           gh release create "$TAG_NAME" --draft
           
           # Upload all package files
-          find ./out -type f -exec gh release upload "$TAG_NAME" {} \;
+          find ./output -type f -exec gh release upload "$TAG_NAME" {} \;
           
           # Upload LICENSE file
           gh release upload "$TAG_NAME" LICENSE
