@@ -110,6 +110,7 @@ jobs:
           ANDROID_SPLIT_ABI_ENABLE: true
           ANDROID_SPLIT_ABI_UNIVERSAL_APK: true
         run: |
+          rm -rf app/build/outputs/apk
           ./gradlew assembleRelease
 
       - name: Organize APKs
@@ -124,14 +125,7 @@ jobs:
           cp app/build/outputs/apk/release/*-x86_64-release.apk output/clash-android-${VERSION}-x86_64.apk || true
           cp app/build/outputs/apk/release/*-universal-release.apk output/clash-android-${VERSION}-all.apk || true
           
-          ls -lh output/
-      
-      - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: apk-all-platforms
-          path: output/*.apk
-          retention-days: 30
+          ls -lh output/
       
       - name: Create Release
         uses: softprops/action-gh-release@v2
