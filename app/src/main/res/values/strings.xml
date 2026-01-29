@@ -53,6 +53,8 @@
     <string name="settings_fake_ip_desc">使用虚拟 IP 地址进行 DNS 解析，提高性能</string>
     <string name="settings_ipv6">启用 IPv6</string>
     <string name="settings_ipv6_desc">允许使用 IPv6 协议进行网络连接</string>
+    <string name="settings_app_filter">应用过滤</string>
+    <string name="settings_app_filter_desc">选择允许或排除的应用</string>
     <string name="settings_notification_permission">通知权限</string>
     <string name="settings_notification_permission_required">需要通知权限才能显示前台服务通知</string>
     <string name="settings_about">关于</string>
@@ -75,4 +77,17 @@
     <string name="connections_download">↓ %1$s</string>
     <string name="connections_upload">↑ %1$s</string>
     <string name="back">返回</string>
+
+    <!-- App Selector Screen -->
+    <string name="app_selector_title">应用过滤</string>
+    <string name="app_selector_mode">过滤模式</string>
+    <string name="app_selector_mode_all">全部通过 VPN</string>
+    <string name="app_selector_mode_allowed">仅选中的应用</string>
+    <string name="app_selector_mode_disallowed">排除选中的应用</string>
+    <string name="app_selector_search">搜索应用...</string>
+    <string name="app_selector_selected">已选择 %1$d 个应用</string>
+    <string name="app_selector_loading">加载应用列表...</string>
+    <string name="app_selector_system_apps">显示系统应用</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
 </resources>

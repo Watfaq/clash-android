@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
@@ -55,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.AppSelectorScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.MainActivity
 import rs.clash.android.R
@@ -187,6 +189,16 @@ fun SettingsScreen(
 						checked = viewModel.ipv6Enabled,
 						onCheckedChange = { enabled ->
 							viewModel.updateIpv6Enabled(enabled)
+						},
+					)
+
+					HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
+					SettingsItem(
+						icon = Icons.Default.FilterList,
+						title = stringResource(R.string.settings_app_filter),
+						subtitle = viewModel.getAppFilterSummary(),
+						onClick = {
+							navigator.navigate(AppSelectorScreenDestination)
 						},
 					)
 				}

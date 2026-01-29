@@ -21,6 +21,12 @@ enum class LanguagePreference {
 	ENGLISH,
 }
 
+enum class AppFilterMode {
+	ALL,
+	ALLOWED,
+	DISALLOWED,
+}
+
 class SettingsViewModel(
 	application: Application,
 ) : AndroidViewModel(application) {
@@ -39,6 +45,15 @@ class SettingsViewModel(
 		private set
 
 	var ipv6Enabled: Boolean by mutableStateOf(loadIpv6Enabled())
+		private set
+
+	var appFilterMode: AppFilterMode by mutableStateOf(loadAppFilterMode())
+		private set
+
+	var allowedApps: Set<String> by mutableStateOf(loadAllowedApps())
+		private set
+
+	var disallowedApps: Set<String> by mutableStateOf(loadDisallowedApps())
 		private set
 
 	private fun loadDarkModePreference(): DarkModePreference {
@@ -65,6 +80,25 @@ class SettingsViewModel(
 
 	private fun loadIpv6Enabled(): Boolean = prefs.getBoolean("ipv6", true)
 
+	private fun loadAppFilterMode(): AppFilterMode {
+		val value = prefs.getString("app_filter_mode", "ALL") ?: "ALL"
+		return try {
+			AppFilterMode.valueOf(value)
+		} catch (e: IllegalArgumentException) {
+			AppFilterMode.ALL
+		}
+	}
+
+	private fun loadAllowedApps(): Set<String> {
+		val value = prefs.getStringSet("allowed_apps", emptySet()) ?: emptySet()
+		return value.toSet()
+	}
+
+	private fun loadDisallowedApps(): Set<String> {
+		val value = prefs.getStringSet("disallowed_apps", emptySet()) ?: emptySet()
+		return value.toSet()
+	}
+
 	fun updateDarkModePreference(preference: DarkModePreference) {
 		darkModePreference = preference
 		prefs.edit { putString("dark_mode", preference.name) }
@@ -90,6 +124,21 @@ class SettingsViewModel(
 		prefs.edit { putBoolean("ipv6", enabled) }
 	}
 
+	fun updateAppFilterMode(mode: AppFilterMode) {
+		appFilterMode = mode
+		prefs.edit { putString("app_filter_mode", mode.name) }
+	}
+
+	fun updateAllowedApps(apps: Set<String>) {
+		allowedApps = apps
+		prefs.edit { putStringSet("allowed_apps", apps) }
+	}
+
+	fun updateDisallowedApps(apps: Set<String>) {
+		disallowedApps = apps
+		prefs.edit { putStringSet("disallowed_apps", apps) }
+	}
+
 	fun getDarkModeDisplayName(): String {
 		val context = getApplication<Application>().applicationContext
 		return when (darkModePreference) {
@@ -105,6 +154,24 @@ class SettingsViewModel(
 			LanguagePreference.SYSTEM -> context.getString(R.string.language_system)
 			LanguagePreference.SIMPLIFIED_CHINESE -> context.getString(R.string.language_simplified_chinese)
 			LanguagePreference.ENGLISH -> context.getString(R.string.language_english)
+		}
+	}
+
+	fun getAppFilterModeDisplayName(): String {
+		val context = getApplication<Application>().applicationContext
+		return when (appFilterMode) {
+			AppFilterMode.ALL -> context.getString(R.string.app_selector_mode_all)
+			AppFilterMode.ALLOWED -> context.getString(R.string.app_selector_mode_allowed)
+			AppFilterMode.DISALLOWED -> context.getString(R.string.app_selector_mode_disallowed)
+		}
+	}
+
+	fun getAppFilterSummary(): String {
+		val context = getApplication<Application>().applicationContext
+		return when (appFilterMode) {
+			AppFilterMode.ALL -> context.getString(R.string.app_selector_mode_all)
+			AppFilterMode.ALLOWED -> context.getString(R.string.app_selector_selected, allowedApps.size)
+			AppFilterMode.DISALLOWED -> context.getString(R.string.app_selector_selected, disallowedApps.size)
 		}
 	}
 }

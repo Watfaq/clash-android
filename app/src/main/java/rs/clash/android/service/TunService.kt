@@ -11,13 +11,13 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import rs.clash.android.Global
 import rs.clash.android.ffi.initClash
 import rs.clash.android.util.NotificationHelper
 import rs.clash.android.util.PermissionHelper
 import uniffi.clash_android_ffi.ProfileOverride
+import uniffi.clash_android_ffi.shutdown
 import java.io.File
 
 var tunService: TunService? = null
@@ -76,7 +76,40 @@ class TunService : VpnService() {
 		builder.addRoute("0.0.0.0", 0)
 
 		builder.addDnsServer("10.0.0.2")
-		builder.addDisallowedApplication(packageName)
+		
+		// Apply app filter settings
+		val appFilterMode = prefs.getString("app_filter_mode", "ALL") ?: "ALL"
+		when (appFilterMode) {
+			"ALLOWED" -> {
+				val allowedApps = prefs.getStringSet("allowed_apps", emptySet()) ?: emptySet()
+				allowedApps.forEach { packageName ->
+					try {
+						builder.addAllowedApplication(packageName)
+						Log.d("clash", "Added allowed app: $packageName")
+					} catch (e: Exception) {
+						Log.e("clash", "Failed to add allowed app: $packageName", e)
+					}
+				}
+			}
+			"DISALLOWED" -> {
+				val disallowedApps = prefs.getStringSet("disallowed_apps", emptySet()) ?: emptySet()
+				// Always disallow self
+				builder.addDisallowedApplication(packageName)
+				disallowedApps.forEach { packageName ->
+					try {
+						builder.addDisallowedApplication(packageName)
+						Log.d("clash", "Added disallowed app: $packageName")
+					} catch (e: Exception) {
+						Log.e("clash", "Failed to add disallowed app: $packageName", e)
+					}
+				}
+			}
+			else -> {
+				// ALL mode - disallow only self
+				builder.addDisallowedApplication(packageName)
+			}
+		}
+		
 		builder.allowBypass()
 		vpnInterface = builder.establish()
 
@@ -141,14 +174,9 @@ class TunService : VpnService() {
 			}
 			isDestroying = true
 		}
-
 		Log.i("clash", "Cleaning up VPN service")
-
-		try {
-			serviceScope.cancel()
-		} catch (e: Exception) {
-			Log.e("clash", "Error cancelling service scope", e)
-		}
+		// pass `shutdown` t0 clash-lib
+		shutdown()
 
 		try {
 			vpnInterface?.close()
@@ -160,6 +188,7 @@ class TunService : VpnService() {
 		tunFd = null
 		tunService = null
 		Global.isServiceRunning.value = false
+		isDestroying = false
 	}
 
 	fun stopVpn() {

@@ -54,6 +54,8 @@
     <string name="settings_fake_ip_desc">Use virtual IP addresses for DNS resolution to improve performance</string>
     <string name="settings_ipv6">Enable IPv6</string>
     <string name="settings_ipv6_desc">Allow network connections using IPv6 protocol</string>
+    <string name="settings_app_filter">App Filter</string>
+    <string name="settings_app_filter_desc">Select allowed or disallowed apps</string>
     <string name="settings_notification_permission">Notification Permission</string>
     <string name="settings_notification_permission_required">Notification permission required to show foreground service notification</string>
     <string name="settings_about">About</string>
@@ -76,4 +78,18 @@
     <string name="connections_download">↓ %1$s</string>
     <string name="connections_upload">↑ %1$s</string>
     <string name="back">Back</string>
+
+    <!-- App Selector Screen -->
+    <string name="app_selector_title">App Filter</string>
+    <string name="app_selector_mode">Filter Mode</string>
+    <string name="app_selector_mode_all">All apps through VPN</string>
+    <string name="app_selector_mode_allowed">Only selected apps</string>
+    <string name="app_selector_mode_disallowed">Exclude selected apps</string>
+    <string name="app_selector_search">Search apps...</string>
+    <string name="app_selector_selected">%1$d apps selected</string>
+    <string name="app_selector_loading">Loading apps...</string>
+    <string name="app_selector_system_apps">Show system apps</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
 </resources>
+
