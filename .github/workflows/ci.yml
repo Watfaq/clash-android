@@ -7,6 +7,10 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -148,6 +152,7 @@ jobs:
           
           # Publish the release (change from draft to published)
           gh release edit "$TAG_NAME" --draft=false
+
 
 
 
