@@ -5,10 +5,14 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import rs.clash.android.model.Profile
 import uniffi.clash_android_ffi.EyreException
 import uniffi.clash_android_ffi.formatEyreError
 import uniffi.clash_android_ffi.verifyConfig
@@ -41,6 +45,14 @@ class ProfileViewModel : ViewModel() {
 	var verificationResult by mutableStateOf<String?>(null)
 		private set
 
+	// Multiple profiles support
+	val profiles = mutableStateListOf<Profile>()
+	
+	var activeProfile by mutableStateOf<Profile?>(null)
+		private set
+	
+	private val gson = Gson()
+
 	fun selectFile(
 		context: Context,
 		uri: Uri,
@@ -72,29 +84,87 @@ class ProfileViewModel : ViewModel() {
 	fun loadSavedFilePath(context: Context) {
 		val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
 		savedFilePath = sharedPreferences.getString("profile_path", null)
+		
+		// Load profiles list
+		loadProfiles(context)
+	}
+
+	private fun loadProfiles(context: Context) {
+		val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
+		val profilesJson = sharedPreferences.getString("profiles_list", null)
+		
+		profiles.clear()
+		if (profilesJson != null) {
+			try {
+				val type = object : TypeToken<List<Profile>>() {}.type
+				val loadedProfiles: List<Profile> = gson.fromJson(profilesJson, type)
+				profiles.addAll(loadedProfiles)
+				
+				// Update active profile
+				activeProfile = profiles.firstOrNull { it.isActive }
+			} catch (e: Exception) {
+				e.printStackTrace()
+			}
+		}
+	}
+
+	private fun saveProfiles(context: Context) {
+		val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
+		val profilesJson = gson.toJson(profiles)
+		sharedPreferences.edit {
+			putString("profiles_list", profilesJson)
+		}
 	}
 
 	fun saveFileToAppDirectory(
 		context: Context,
 		uri: Uri,
+		profileName: String? = null,
 	): String? {
 		isImporting = true
 		return try {
 			val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-			val file = File(context.filesDir, "default")
+			val fileName =
+				profileName ?: selectedFile?.name?.let {
+					it.substringBeforeLast('.')
+				} ?: "profile_${System.currentTimeMillis()}"
+			
+			// Create unique file name
+			val file = File(context.filesDir, fileName)
 			if (file.exists()) {
 				file.delete()
 			}
 			file.createNewFile()
+			
+			var fileSize = 0L
 			inputStream?.use { input ->
 				FileOutputStream(file).use { output ->
-					input.copyTo(output)
+					fileSize = input.copyTo(output)
 				}
 			}
 
 			savedFilePath = file.absolutePath
 
-			// Save to SharedPreferences
+			// Add to profiles list
+			val newProfile =
+				Profile(
+					name = fileName,
+					filePath = file.absolutePath,
+					fileSize = fileSize,
+					isActive = profiles.isEmpty(), // First profile becomes active
+				)
+			
+			// If this is the first profile or user wants to activate it, deactivate others
+			if (profiles.isEmpty()) {
+				profiles.add(newProfile)
+				activeProfile = newProfile
+			} else {
+				profiles.add(newProfile)
+			}
+			
+			saveProfiles(context)
+
+			// Save to SharedPreferences for backward compatibility
 			val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
 			sharedPreferences.edit {
 				putString("profile_path", file.absolutePath)
@@ -110,6 +180,76 @@ class ProfileViewModel : ViewModel() {
 		}
 	}
 
+	fun activateProfile(
+		context: Context,
+		profile: Profile,
+	) {
+		// Deactivate all profiles
+		val updatedProfiles = profiles.map { it.copy(isActive = false) }
+		profiles.clear()
+		profiles.addAll(updatedProfiles)
+		
+		// Activate selected profile
+		val index = profiles.indexOfFirst { it.id == profile.id }
+		if (index >= 0) {
+			profiles[index] = profiles[index].copy(isActive = true)
+			activeProfile = profiles[index]
+			savedFilePath = profiles[index].filePath
+			
+			// Update SharedPreferences
+			val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
+			sharedPreferences.edit {
+				putString("profile_path", profiles[index].filePath)
+			}
+			
+			saveProfiles(context)
+			Toast.makeText(context, "已切换到配置: ${profile.name}", Toast.LENGTH_SHORT).show()
+		}
+	}
+
+	fun deleteProfile(
+		context: Context,
+		profile: Profile,
+	) {
+		val file = File(profile.filePath)
+		if (file.exists()) {
+			file.delete()
+		}
+		
+		profiles.removeAll { it.id == profile.id }
+		
+		// If deleted profile was active, activate the first remaining profile
+		if (profile.isActive && profiles.isNotEmpty()) {
+			activateProfile(context, profiles[0])
+		} else if (profiles.isEmpty()) {
+			activeProfile = null
+			savedFilePath = null
+			val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
+			sharedPreferences.edit {
+				remove("profile_path")
+			}
+		}
+		
+		saveProfiles(context)
+		Toast.makeText(context, "配置已删除: ${profile.name}", Toast.LENGTH_SHORT).show()
+	}
+
+	fun renameProfile(
+		context: Context,
+		profile: Profile,
+		newName: String,
+	) {
+		val index = profiles.indexOfFirst { it.id == profile.id }
+		if (index >= 0) {
+			profiles[index] = profiles[index].copy(name = newName)
+			if (profiles[index].isActive) {
+				activeProfile = profiles[index]
+			}
+			saveProfiles(context)
+			Toast.makeText(context, "配置已重命名", Toast.LENGTH_SHORT).show()
+		}
+	}
+
 	fun formatFileSize(size: Long): String {
 		if (size <= 0) return "0 B"
 		val units = arrayOf("B", "KB", "MB", "GB")
@@ -117,13 +257,12 @@ class ProfileViewModel : ViewModel() {
 		return String.format(Locale.US, "%.1f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
 	}
 
-	fun verify(path: String): Pair<Boolean, String> {
-		return try {
+	fun verify(path: String): Pair<Boolean, String> =
+		try {
 			true to verifyConfig(path)
 		} catch (e: EyreException) {
 			false to formatEyreError(e)
 		}
-	}
 
 	fun verifyCurrentConfig(context: Context) {
 		if (savedFilePath == null) {
@@ -136,11 +275,12 @@ class ProfileViewModel : ViewModel() {
 
 		try {
 			val (isValid, content) = verify(savedFilePath!!)
-			verificationResult = if (isValid) {
-				"配置文件合法\n\n$content"
-			} else {
-				"配置文件不合法：$content"
-			}
+			verificationResult =
+				if (isValid) {
+					"配置文件合法\n\n$content"
+				} else {
+					"配置文件不合法：$content"
+				}
 		} catch (e: Exception) {
 			verificationResult = "验证失败: ${e.message}"
 		} finally {
