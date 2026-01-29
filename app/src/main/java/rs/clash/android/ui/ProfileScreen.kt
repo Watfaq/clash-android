@@ -82,7 +82,7 @@ fun ProfileScreen(
 
 	// Load saved file path on first composition
 	LaunchedEffect(Unit) {
-		vm.loadSavedFilePath(context)
+		vm.loadSavedFilePath()
 	}
 
 	val launcher =
@@ -411,43 +411,43 @@ fun ProfileCard(
 					expanded = showMenu.value,
 					onDismissRequest = { showMenu.value = false },
 				) {
-				if (!profile.isActive) {
+					if (!profile.isActive) {
+						DropdownMenuItem(
+							text = { Text("设为活动配置") },
+							onClick = {
+								onActivate()
+								showMenu.value = false
+							},
+							leadingIcon = {
+								Icon(Icons.Default.CheckCircle, contentDescription = null)
+							},
+						)
+					}
 					DropdownMenuItem(
-						text = { Text("设为活动配置") },
+						text = { Text("重命名") },
 						onClick = {
-							onActivate()
+							showRenameDialog.value = true
 							showMenu.value = false
 						},
 						leadingIcon = {
-							Icon(Icons.Default.CheckCircle, contentDescription = null)
+							Icon(Icons.Default.Edit, contentDescription = null)
+						},
+					)
+					DropdownMenuItem(
+						text = { Text("删除") },
+						onClick = {
+							onDelete()
+							showMenu.value = false
+						},
+						leadingIcon = {
+							Icon(
+								Icons.Default.Delete,
+								contentDescription = null,
+								tint = MaterialTheme.colorScheme.error,
+							)
 						},
 					)
 				}
-				DropdownMenuItem(
-					text = { Text("重命名") },
-					onClick = {
-						showRenameDialog.value = true
-						showMenu.value = false
-					},
-					leadingIcon = {
-						Icon(Icons.Default.Edit, contentDescription = null)
-					},
-				)
-				DropdownMenuItem(
-					text = { Text("删除") },
-					onClick = {
-						onDelete()
-						showMenu.value = false
-					},
-					leadingIcon = {
-						Icon(
-							Icons.Default.Delete,
-							contentDescription = null,
-							tint = MaterialTheme.colorScheme.error,
-						)
-					},
-				)
-			}
 			}
 		}
 	}

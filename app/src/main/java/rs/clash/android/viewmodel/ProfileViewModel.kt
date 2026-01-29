@@ -12,6 +12,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import rs.clash.android.Global
 import rs.clash.android.model.Profile
 import uniffi.clash_android_ffi.EyreException
 import uniffi.clash_android_ffi.formatEyreError
@@ -30,6 +31,7 @@ data class FileInfo(
 )
 
 class ProfileViewModel : ViewModel() {
+	private val prefs = Global.application.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
 	var selectedFile by mutableStateOf<FileInfo?>(null)
 		private set
 
@@ -81,17 +83,14 @@ class ProfileViewModel : ViewModel() {
 		selectedFile = null
 	}
 
-	fun loadSavedFilePath(context: Context) {
-		val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
-		savedFilePath = sharedPreferences.getString("profile_path", null)
-		
+	fun loadSavedFilePath() {
+		savedFilePath = prefs.getString("profile_path", null)
 		// Load profiles list
-		loadProfiles(context)
+		loadProfiles()
 	}
 
-	private fun loadProfiles(context: Context) {
-		val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
-		val profilesJson = sharedPreferences.getString("profiles_list", null)
+	private fun loadProfiles() {
+		val profilesJson = prefs.getString("profiles_list", null)
 		
 		profiles.clear()
 		if (profilesJson != null) {
@@ -108,10 +107,9 @@ class ProfileViewModel : ViewModel() {
 		}
 	}
 
-	private fun saveProfiles(context: Context) {
-		val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
+	private fun saveProfiles() {
 		val profilesJson = gson.toJson(profiles)
-		sharedPreferences.edit {
+		prefs.edit {
 			putString("profiles_list", profilesJson)
 		}
 	}
@@ -125,9 +123,7 @@ class ProfileViewModel : ViewModel() {
 		return try {
 			val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
 			val fileName =
-				profileName ?: selectedFile?.name?.let {
-					it.substringBeforeLast('.')
-				} ?: "profile_${System.currentTimeMillis()}"
+				profileName ?: selectedFile?.name?.substringBeforeLast('.') ?: "profile_${System.currentTimeMillis()}"
 			
 			// Create unique file name
 			val file = File(context.filesDir, fileName)
@@ -162,11 +158,10 @@ class ProfileViewModel : ViewModel() {
 				profiles.add(newProfile)
 			}
 			
-			saveProfiles(context)
+			saveProfiles()
 
 			// Save to SharedPreferences for backward compatibility
-			val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
-			sharedPreferences.edit {
+			prefs.edit {
 				putString("profile_path", file.absolutePath)
 			}
 
@@ -197,12 +192,11 @@ class ProfileViewModel : ViewModel() {
 			savedFilePath = profiles[index].filePath
 			
 			// Update SharedPreferences
-			val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
-			sharedPreferences.edit {
+			prefs.edit {
 				putString("profile_path", profiles[index].filePath)
 			}
 			
-			saveProfiles(context)
+			saveProfiles()
 			Toast.makeText(context, "已切换到配置: ${profile.name}", Toast.LENGTH_SHORT).show()
 		}
 	}
@@ -224,13 +218,12 @@ class ProfileViewModel : ViewModel() {
 		} else if (profiles.isEmpty()) {
 			activeProfile = null
 			savedFilePath = null
-			val sharedPreferences = context.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
-			sharedPreferences.edit {
+			prefs.edit {
 				remove("profile_path")
 			}
 		}
 		
-		saveProfiles(context)
+		saveProfiles()
 		Toast.makeText(context, "配置已删除: ${profile.name}", Toast.LENGTH_SHORT).show()
 	}
 
@@ -245,7 +238,7 @@ class ProfileViewModel : ViewModel() {
 			if (profiles[index].isActive) {
 				activeProfile = profiles[index]
 			}
-			saveProfiles(context)
+			saveProfiles()
 			Toast.makeText(context, "配置已重命名", Toast.LENGTH_SHORT).show()
 		}
 	}

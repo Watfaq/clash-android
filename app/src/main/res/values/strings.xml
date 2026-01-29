@@ -91,7 +91,7 @@
     <string name="app_selector_mode_disallowed">排除选中的应用</string>
     <string name="app_selector_search">搜索应用...</string>
     <string name="app_selector_selected">已选择 %1$d 个应用</string>
-    <string name="app_selector_loading">加载应用列表...</string>
+    <string name="app_selector_loading">加载应用列表中...</string>
     <string name="app_selector_system_apps">显示系统应用</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>
