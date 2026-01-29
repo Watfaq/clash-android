@@ -109,7 +109,6 @@ dependencies {
 	implementation(libs.androidx.material3)
 	implementation(libs.androidx.material.icons.extended)
 	implementation(libs.compose.destinations.core)
-	implementation(libs.gson)
 
 	ksp(libs.compose.destinations.ksp)
 

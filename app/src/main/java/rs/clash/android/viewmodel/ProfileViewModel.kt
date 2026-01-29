@@ -10,8 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import org.json.JSONArray
 import rs.clash.android.Global
 import rs.clash.android.model.Profile
 import uniffi.clash_android_ffi.EyreException
@@ -52,8 +51,6 @@ class ProfileViewModel : ViewModel() {
 	
 	var activeProfile by mutableStateOf<Profile?>(null)
 		private set
-	
-	private val gson = Gson()
 
 	fun selectFile(
 		context: Context,
@@ -95,8 +92,15 @@ class ProfileViewModel : ViewModel() {
 		profiles.clear()
 		if (profilesJson != null) {
 			try {
-				val type = object : TypeToken<List<Profile>>() {}.type
-				val loadedProfiles: List<Profile> = gson.fromJson(profilesJson, type)
+				val jsonArray = JSONArray(profilesJson)
+				val loadedProfiles = mutableListOf<Profile>()
+				
+				for (i in 0 until jsonArray.length()) {
+					val jsonObject = jsonArray.getJSONObject(i)
+					val profile = Profile(jsonObject)
+					loadedProfiles.add(profile)
+				}
+				
 				profiles.addAll(loadedProfiles)
 				
 				// Update active profile
@@ -108,9 +112,13 @@ class ProfileViewModel : ViewModel() {
 	}
 
 	private fun saveProfiles() {
-		val profilesJson = gson.toJson(profiles)
+		val jsonArray = JSONArray()
+		profiles.forEach { profile ->
+			jsonArray.put(profile.asJsonObject())
+		}
+		
 		prefs.edit {
-			putString("profiles_list", profilesJson)
+			putString("profiles_list", jsonArray.toString())
 		}
 	}
 
