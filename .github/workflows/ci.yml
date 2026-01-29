@@ -150,8 +150,24 @@ jobs:
           # Upload LICENSE file
           gh release upload "$TAG_NAME" LICENSE
           
+      - name: Generate a changelog
+        uses: orhun/git-cliff-action@main
+        id: git-cliff
+        with:
+          config: .github/cliff.toml
+          args: --latest --strip header
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          OUTPUT: CHANGELOG.md
+
+
+      - name: Create and publish release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
+        run: |
           # Publish the release (change from draft to published)
-          gh release edit "$TAG_NAME" --draft=false
+          gh release edit "$TAG_NAME" --draft=false --notes-file CHANGELOG.md
 
 
 

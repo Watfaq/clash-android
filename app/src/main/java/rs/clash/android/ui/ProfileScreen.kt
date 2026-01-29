@@ -5,6 +5,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,9 +17,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,6 +30,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
@@ -104,6 +110,15 @@ fun ProfileScreen(
 				)
 			}
 
+			// Verification Result Card
+			if (vm.verificationResult != null) {
+				VerificationResultCard(
+					result = vm.verificationResult!!,
+					onDismiss = { vm.clearVerificationResult() },
+					modifier = Modifier.fillMaxWidth(),
+				)
+			}
+
 			Spacer(modifier = Modifier.weight(1f))
 
 			// Action Buttons
@@ -139,6 +154,34 @@ fun ProfileScreen(
 					}
 				}
 
+				if (vm.savedFilePath != null) {
+					FilledTonalButton(
+						onClick = {
+							vm.verifyCurrentConfig(context)
+						},
+						modifier = Modifier.fillMaxWidth(),
+						enabled = !vm.isVerifying,
+					) {
+						if (vm.isVerifying) {
+							CircularProgressIndicator(
+								modifier = Modifier.size(20.dp),
+								color = MaterialTheme.colorScheme.onSecondaryContainer,
+								strokeWidth = 2.dp,
+							)
+							Spacer(modifier = Modifier.width(8.dp))
+							Text(stringResource(R.string.verifying))
+						} else {
+							Icon(
+								Icons.Default.VerifiedUser,
+								contentDescription = null,
+								modifier = Modifier.size(20.dp),
+							)
+							Spacer(modifier = Modifier.width(8.dp))
+							Text(stringResource(R.string.verify_config))
+						}
+					}
+				}
+
 				FilledTonalButton(
 					onClick = {
 						launcher.launch(arrayOf("*/*"))
@@ -153,6 +196,86 @@ fun ProfileScreen(
 					Spacer(modifier = Modifier.width(8.dp))
 					Text(stringResource(R.string.choose_file))
 				}
+			}
+		}
+	}
+}
+
+@Composable
+fun VerificationResultCard(
+	result: String,
+	onDismiss: () -> Unit,
+	modifier: Modifier = Modifier,
+) {
+	val isValid = result.contains("合法") || result.contains("valid")
+	val scrollState = rememberScrollState()
+	
+	ElevatedCard(
+		modifier = modifier,
+		colors = CardDefaults.elevatedCardColors(
+			containerColor = if (isValid) {
+				MaterialTheme.colorScheme.tertiaryContainer
+			} else {
+				MaterialTheme.colorScheme.errorContainer
+			},
+		),
+	) {
+		Row(
+			modifier = Modifier.padding(16.dp),
+			verticalAlignment = Alignment.Top,
+		) {
+			Icon(
+				if (isValid) Icons.Default.CheckCircle else Icons.Default.Error,
+				contentDescription = null,
+				tint = if (isValid) {
+					MaterialTheme.colorScheme.tertiary
+				} else {
+					MaterialTheme.colorScheme.error
+				},
+				modifier = Modifier.size(24.dp),
+			)
+			Spacer(modifier = Modifier.width(12.dp))
+			Column(
+				modifier = Modifier
+					.weight(1f)
+					.height(300.dp)
+					.verticalScroll(scrollState)
+			) {
+				Text(
+					text = stringResource(R.string.validation_result),
+					style = MaterialTheme.typography.labelMedium,
+					color = if (isValid) {
+						MaterialTheme.colorScheme.onTertiaryContainer
+					} else {
+						MaterialTheme.colorScheme.onErrorContainer
+					},
+				)
+				Spacer(modifier = Modifier.height(4.dp))
+				Text(
+					text = result,
+					style = MaterialTheme.typography.bodySmall,
+					color = if (isValid) {
+						MaterialTheme.colorScheme.onTertiaryContainer
+					} else {
+						MaterialTheme.colorScheme.onErrorContainer
+					},
+					fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+				)
+			}
+			IconButton(
+				onClick = onDismiss,
+				modifier = Modifier.size(24.dp),
+			) {
+				Icon(
+					Icons.Default.Close,
+					contentDescription = "Close",
+					tint = if (isValid) {
+						MaterialTheme.colorScheme.onTertiaryContainer
+					} else {
+						MaterialTheme.colorScheme.onErrorContainer
+					},
+					modifier = Modifier.size(20.dp),
+				)
 			}
 		}
 	}

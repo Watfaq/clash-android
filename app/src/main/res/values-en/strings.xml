@@ -14,6 +14,11 @@
     <string name="no_profile">No profile selected</string>
     <string name="file_name">File Name</string>
     <string name="file_path">File Path</string>
+    <string name="verify_config">Verify Configuration</string>
+    <string name="verifying">Verifying...</string>
+    <string name="validation_result">Validation Result</string>
+    <string name="config_valid">Configuration is valid</string>
+    <string name="config_invalid">Configuration is invalid</string>
 
     <!-- Home Screen -->
     <string name="home_title">Overview</string>

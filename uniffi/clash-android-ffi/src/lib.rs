@@ -83,6 +83,12 @@ pub extern "system" fn java_init(
     set_runtime_builder(Box::new(builder));
 }
 
+#[uniffi::export]
+fn verify_config(config_path: &str) -> Result<String, EyreError> {
+    let config = Config::File(config_path.to_string()).try_parse()?;
+    Ok(format!("{:#?}", config))
+}
+
 #[uniffi::export(async_runtime = "tokio")]
 async fn init_main(
     config_path: String,

@@ -9,6 +9,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
+import uniffi.clash_android_ffi.EyreException
+import uniffi.clash_android_ffi.formatEyreError
+import uniffi.clash_android_ffi.verifyConfig
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -30,6 +33,12 @@ class ProfileViewModel : ViewModel() {
 		private set
 
 	var savedFilePath by mutableStateOf<String?>(null)
+		private set
+
+	var isVerifying by mutableStateOf(false)
+		private set
+
+	var verificationResult by mutableStateOf<String?>(null)
 		private set
 
 	fun selectFile(
@@ -106,5 +115,40 @@ class ProfileViewModel : ViewModel() {
 		val units = arrayOf("B", "KB", "MB", "GB")
 		val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
 		return String.format(Locale.US, "%.1f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
+	}
+
+	fun verify(path: String): Pair<Boolean, String> {
+		return try {
+			true to verifyConfig(path)
+		} catch (e: EyreException) {
+			false to formatEyreError(e)
+		}
+	}
+
+	fun verifyCurrentConfig(context: Context) {
+		if (savedFilePath == null) {
+			verificationResult = "未找到配置文件"
+			return
+		}
+
+		isVerifying = true
+		verificationResult = null
+
+		try {
+			val (isValid, content) = verify(savedFilePath!!)
+			verificationResult = if (isValid) {
+				"配置文件合法\n\n$content"
+			} else {
+				"配置文件不合法：$content"
+			}
+		} catch (e: Exception) {
+			verificationResult = "验证失败: ${e.message}"
+		} finally {
+			isVerifying = false
+		}
+	}
+
+	fun clearVerificationResult() {
+		verificationResult = null
 	}
 }

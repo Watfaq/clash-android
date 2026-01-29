@@ -13,6 +13,11 @@
     <string name="no_profile">未选择配置文件</string>
     <string name="file_name">文件名</string>
     <string name="file_path">文件路径</string>
+    <string name="verify_config">验证配置</string>
+    <string name="verifying">验证中...</string>
+    <string name="validation_result">验证结果</string>
+    <string name="config_valid">配置文件合法</string>
+    <string name="config_invalid">配置文件不合法</string>
 
     <!-- Home Screen -->
     <string name="home_title">总览</string>
