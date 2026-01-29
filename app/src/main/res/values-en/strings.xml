@@ -96,5 +96,21 @@
     <string name="app_selector_system_apps">Show system apps</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
+
+    <!-- About Screen -->
+    <string name="about_title">About</string>
+    <string name="about_app_name">Clash Android</string>
+    <string name="about_version">Version</string>
+    <string name="about_description">Clash based Android VPN client</string>
+    <string name="about_developer">Developer</string>
+    <string name="about_github">GitHub Repository</string>
+    <string name="about_license">Open Source License</string>
+    
+    <!-- TopBar Actions -->
+    <string name="action_about">About</string>
+    <string name="action_restart">Restart App</string>
+    <string name="restart_confirm_title">Confirm Restart</string>
+    <string name="restart_confirm_message">Are you sure you want to restart the app?</string>
+    <string name="confirm">Confirm</string>
 </resources>
 

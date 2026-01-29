@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
@@ -47,8 +48,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -61,6 +64,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.R
 import rs.clash.android.model.Profile
+import rs.clash.android.ui.components.TextInfoDialog
 import rs.clash.android.viewmodel.ProfileViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -80,6 +84,7 @@ fun ProfileScreen(
 	val showNameDialog = remember { mutableStateOf(false) }
 	val profileName = remember { mutableStateOf("") }
 
+	var showInfoDialog by remember { mutableStateOf(false) }
 	// Load saved file path on first composition
 	LaunchedEffect(Unit) {
 		vm.loadSavedFilePath()
@@ -93,7 +98,21 @@ fun ProfileScreen(
 				showNameDialog.value = true
 			}
 		}
-	
+
+	// Info dialog
+	if (showInfoDialog) {
+		TextInfoDialog(
+			title = stringResource(R.string.about_title),
+			content =
+				"""
+				已知问题:
+				- 目前 clash-rs 并非100%兼容 mihomo 的配置文件, 应用配置文件前可先检验配置文件合法性。
+				- 切换配置文件后需要重启应用。
+				""".trimIndent(),
+			onDismiss = { showInfoDialog = false },
+		)
+	}
+
 	// Name input dialog
 	if (showNameDialog.value && vm.selectedFile != null) {
 		AlertDialog(
@@ -147,6 +166,14 @@ fun ProfileScreen(
 			TopAppBar(
 				title = { Text(stringResource(R.string.profile_title)) },
 				windowInsets = WindowInsets(),
+				actions = {
+					IconButton(onClick = { showInfoDialog = true }) {
+						Icon(
+							imageVector = Icons.Filled.Info,
+							contentDescription = stringResource(R.string.action_about),
+						)
+					}
+				},
 			)
 		},
 	) { padding ->

@@ -95,4 +95,20 @@
     <string name="app_selector_system_apps">显示系统应用</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>
+
+    <!-- About Screen -->
+    <string name="about_title">关于</string>
+    <string name="about_app_name">Clash Android</string>
+    <string name="about_version">版本</string>
+    <string name="about_description">基于 Clash 的 Android VPN 客户端</string>
+    <string name="about_developer">开发者</string>
+    <string name="about_github">GitHub 仓库</string>
+    <string name="about_license">开源许可</string>
+    
+    <!-- TopBar Actions -->
+    <string name="action_about">关于</string>
+    <string name="action_restart">重启应用</string>
+    <string name="restart_confirm_title">确认重启</string>
+    <string name="restart_confirm_message">确定要重启应用吗？</string>
+    <string name="confirm">确认</string>
 </resources>
