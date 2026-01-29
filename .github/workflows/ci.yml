@@ -134,8 +134,7 @@ jobs:
         run: |
           # Delete old latest release if creating a new latest release
           if [ "$TAG_NAME" = "latest" ]; then
-            gh release delete "$TAG_NAME" --yes || true
-            git push --delete origin "$TAG_NAME" || true
+            gh release delete "$TAG_NAME" --yes --cleanup-tag || true
           fi
           
           # Create draft release with changelog
@@ -149,5 +148,6 @@ jobs:
           
           # Publish the release (change from draft to published)
           gh release edit "$TAG_NAME" --draft=false
+
 
 
