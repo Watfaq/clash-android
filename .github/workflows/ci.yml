@@ -110,6 +110,7 @@ jobs:
           ANDROID_SPLIT_ABI_ENABLE: true
           ANDROID_SPLIT_ABI_UNIVERSAL_APK: true
         run: |
+          rm -rf app/build/outputs/apk
           ./gradlew assembleRelease
 
       - name: Organize APKs
@@ -125,22 +126,28 @@ jobs:
           cp app/build/outputs/apk/release/*-universal-release.apk output/clash-android-${VERSION}-all.apk || true
           
           ls -lh output/
-      
-      - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: apk-all-platforms
-          path: output/*.apk
-          retention-days: 30
-      
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
-          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'Latest' }}
-          files: output/*.apk
-          draft: false
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Create and publish release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
+        run: |
+          # Delete old latest release if creating a new latest release
+          if [ "$TAG_NAME" = "latest" ]; then
+            gh release delete "$TAG_NAME" --yes || true
+            git push --delete origin "$TAG_NAME" || true
+          fi
+          
+          # Create draft release with changelog
+          gh release create "$TAG_NAME" --draft
+          
+          # Upload all package files
+          find ./output -type f -exec gh release upload "$TAG_NAME" {} \;
+          
+          # Upload LICENSE file
+          gh release upload "$TAG_NAME" LICENSE
+          
+          # Publish the release (change from draft to published)
+          gh release edit "$TAG_NAME" --draft=false
+
 
