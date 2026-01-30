@@ -14,6 +14,7 @@ fi
 echo "Fixing NDK libgcc issue for ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
 
 # Find the clang lib directories with version wildcards
+# Note: This script is designed for Linux x86_64 CI runners (ubuntu-latest)
 CLANG_BASE_DIR="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/lib"
 
 if [ ! -d "$CLANG_BASE_DIR" ]; then
@@ -23,10 +24,14 @@ fi
 
 echo "Found clang lib directory: $CLANG_BASE_DIR"
 
+# Track if we processed any directories
+PROCESSED=0
+
 # Create libgcc.a redirect files for each architecture in the clang version directories
 for clang_version_dir in "$CLANG_BASE_DIR"/clang/*/lib/linux; do
     if [ -d "$clang_version_dir" ]; then
         echo "Processing clang version directory: $clang_version_dir"
+        PROCESSED=1
         
         for arch_dir in "$clang_version_dir"/*; do
             if [ -d "$arch_dir" ]; then
@@ -46,5 +51,10 @@ for clang_version_dir in "$CLANG_BASE_DIR"/clang/*/lib/linux; do
         done
     fi
 done
+
+if [ "$PROCESSED" -eq 0 ]; then
+    echo "Error: No clang lib directories found. NDK structure may have changed."
+    exit 1
+fi
 
 echo "NDK libgcc fix completed successfully"
