@@ -148,7 +148,11 @@ jobs:
           fi
           
           # Create draft release with changelog
-          gh release create "$TAG_NAME" --draft
+          if [[ "$TAG_NAME" == v* ]]; then
+            gh release create "$TAG_NAME" --draft --latest
+          else
+            gh release create "$TAG_NAME" --draft
+          fi
           
           # Upload all package files
           find ./output -type f -exec gh release upload "$TAG_NAME" {} \;
@@ -173,7 +177,11 @@ jobs:
           TAG_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
         run: |
           # Publish the release (change from draft to published)
-          gh release edit "$TAG_NAME" --draft=false --notes-file CHANGELOG.md
+          if [[ "$TAG_NAME" == v* ]]; then
+            gh release edit "$TAG_NAME" --draft=false --latest --notes-file CHANGELOG.md
+          else
+            gh release edit "$TAG_NAME" --draft=false --prerelease --notes-file CHANGELOG.md
+          fi
 
 
 
