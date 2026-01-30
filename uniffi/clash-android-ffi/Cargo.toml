@@ -27,6 +27,7 @@ time = { version = "0.3", features = ["macros", "local-offset"] }
 tracing-subscriber = { version = "0.3", default-features = false, features = ["std", "fmt"]}
 paranoid-android = "0.2"
 color-eyre = "0.6"
+bytes = "1"
 
 ipnet = "2"
 jni = "0.21"
@@ -39,6 +40,7 @@ hyper-util = { version = "0.1", features = ["client", "client-legacy", "tokio"] 
 http-body-util = "0.1"
 hyperlocal = "0.9"
 urlencoding = "2"
+hyper-http-proxy = "1"
 
 [dependencies.clash-lib]
 package = "clash-lib"

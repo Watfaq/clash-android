@@ -10,9 +10,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import rs.clash.android.Global
 import rs.clash.android.model.Profile
+import rs.clash.android.model.ProfileType
 import uniffi.clash_android_ffi.EyreException
 import uniffi.clash_android_ffi.formatEyreError
 import uniffi.clash_android_ffi.verifyConfig
@@ -290,5 +295,166 @@ class ProfileViewModel : ViewModel() {
 
 	fun clearVerificationResult() {
 		verificationResult = null
+	}
+
+	// Remote profile download
+	var isDownloading by mutableStateOf(false)
+		private set
+
+	fun addRemoteProfile(
+		context: Context,
+		profileName: String,
+		url: String,
+		autoUpdate: Boolean = false,
+		userAgent: String? = null,
+		proxyUrl: String? = null,
+	) {
+		viewModelScope.launch {
+			isDownloading = true
+			try {
+				// Create unique file name based on profile name
+				val fileName = profileName.replace(Regex("[^a-zA-Z0-9\\u4e00-\\u9fa5_-]"), "_")
+				val file = File(context.filesDir, fileName)
+				
+				// Download config from URL using Rust FFI
+				withContext(Dispatchers.IO) {
+					val result =
+						uniffi.clash_android_ffi.downloadConfigFromUrl(
+							url,
+							file.absolutePath,
+							userAgent,
+							proxyUrl,
+						)
+					
+					if (!result.success) {
+						withContext(Dispatchers.Main) {
+							Toast
+								.makeText(
+									context,
+									"下载失败: ${result.errorMessage ?: "未知错误"}",
+									Toast.LENGTH_LONG,
+								).show()
+						}
+						return@withContext
+					}
+					
+					// Verify the downloaded config
+					val (isValid, _) = verify(file.absolutePath)
+					if (!isValid) {
+						file.delete()
+						withContext(Dispatchers.Main) {
+							Toast
+								.makeText(
+									context,
+									"配置文件验证失败，已删除",
+									Toast.LENGTH_LONG,
+								).show()
+						}
+						return@withContext
+					}
+					
+					withContext(Dispatchers.Main) {
+						// Add to profiles list
+						val isFirstProfile = profiles.isEmpty()
+						val newProfile =
+							Profile(
+								name = profileName,
+								filePath = file.absolutePath,
+								fileSize = result.fileSize.toLong(),
+								isActive = isFirstProfile,
+								type = ProfileType.REMOTE,
+								url = url,
+								lastUpdated = System.currentTimeMillis(),
+								autoUpdate = autoUpdate,
+								userAgent = userAgent,
+								proxyUrl = proxyUrl,
+							)
+						saveProfiles()
+					}
+				}
+			} catch (e: Exception) {
+				withContext(Dispatchers.Main) {
+					Toast.makeText(context, "添加失败: ${e.message}", Toast.LENGTH_LONG).show()
+				}
+			} finally {
+				isDownloading = false
+			}
+		}
+	}
+
+	fun updateRemoteProfile(
+		context: Context,
+		profile: Profile,
+		userAgent: String? = null,
+		proxyUrl: String? = null,
+	) {
+		if (profile.type != ProfileType.REMOTE || profile.url == null) {
+			Toast.makeText(context, "只能更新远程配置", Toast.LENGTH_SHORT).show()
+			return
+		}
+		
+		viewModelScope.launch {
+			isDownloading = true
+			try {
+				withContext(Dispatchers.IO) {
+					val file = File(profile.filePath)
+					// Use provided parameters or fall back to profile's stored values
+					val effectiveUserAgent = userAgent ?: profile.userAgent
+					val effectiveProxyUrl = proxyUrl ?: profile.proxyUrl
+					val result =
+						uniffi.clash_android_ffi.downloadConfigFromUrl(
+							profile.url,
+							file.absolutePath,
+							effectiveUserAgent,
+							effectiveProxyUrl,
+						)
+					
+					if (!result.success) {
+						withContext(Dispatchers.Main) {
+							Toast
+								.makeText(
+									context,
+									"更新失败: ${result.errorMessage ?: "未知错误"}",
+									Toast.LENGTH_LONG,
+								).show()
+						}
+						return@withContext
+					}
+					
+					// Verify the downloaded config
+					val (isValid, _) = verify(file.absolutePath)
+					if (!isValid) {
+						withContext(Dispatchers.Main) {
+							Toast.makeText(context, "配置文件验证失败", Toast.LENGTH_LONG).show()
+						}
+						return@withContext
+					}
+					
+					withContext(Dispatchers.Main) {
+						// Update profile
+						val index = profiles.indexOfFirst { it.id == profile.id }
+						if (index >= 0) {
+							profiles[index] =
+								profiles[index].copy(
+									fileSize = result.fileSize.toLong(),
+									lastUpdated = System.currentTimeMillis(),
+								)
+							if (profiles[index].isActive) {
+								activeProfile = profiles[index]
+							}
+							saveProfiles()
+						}
+						
+						Toast.makeText(context, "配置更新成功", Toast.LENGTH_SHORT).show()
+					}
+				}
+			} catch (e: Exception) {
+				withContext(Dispatchers.Main) {
+					Toast.makeText(context, "更新失败: ${e.message}", Toast.LENGTH_LONG).show()
+				}
+			} finally {
+				isDownloading = false
+			}
+		}
 	}
 }

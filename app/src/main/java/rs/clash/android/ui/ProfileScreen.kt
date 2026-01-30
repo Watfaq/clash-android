@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
@@ -83,6 +84,12 @@ fun ProfileScreen(
 	val context = LocalContext.current
 	val showNameDialog = remember { mutableStateOf(false) }
 	val profileName = remember { mutableStateOf("") }
+	val showRemoteDialog = remember { mutableStateOf(false) }
+	val remoteName = remember { mutableStateOf("") }
+	val remoteUrl = remember { mutableStateOf("") }
+	val remoteAutoUpdate = remember { mutableStateOf(false) }
+	val remoteUserAgent = remember { mutableStateOf("") }
+	val remoteProxyUrl = remember { mutableStateOf("") }
 
 	var showInfoDialog by remember { mutableStateOf(false) }
 	// Load saved file path on first composition
@@ -110,6 +117,121 @@ fun ProfileScreen(
 				- 切换配置文件后需要重启应用。
 				""".trimIndent(),
 			onDismiss = { showInfoDialog = false },
+		)
+	}
+
+	// Remote profile dialog
+	if (showRemoteDialog.value) {
+		AlertDialog(
+			onDismissRequest = {
+				showRemoteDialog.value = false
+				remoteName.value = ""
+				remoteUrl.value = ""
+				remoteAutoUpdate.value = false
+				remoteUserAgent.value = ""
+				remoteProxyUrl.value = ""
+			},
+			title = { Text("添加远程配置") },
+			text = {
+				Column(
+					verticalArrangement = Arrangement.spacedBy(8.dp),
+					modifier = Modifier.verticalScroll(rememberScrollState()),
+				) {
+					OutlinedTextField(
+						value = remoteName.value,
+						onValueChange = { remoteName.value = it },
+						label = { Text("配置名称") },
+						placeholder = { Text("我的远程配置") },
+						singleLine = true,
+						modifier = Modifier.fillMaxWidth(),
+					)
+					OutlinedTextField(
+						value = remoteUrl.value,
+						onValueChange = { remoteUrl.value = it },
+						label = { Text("订阅 URL") },
+						placeholder = { Text("https://example.com/config.yaml") },
+						singleLine = true,
+						modifier = Modifier.fillMaxWidth(),
+					)
+					OutlinedTextField(
+						value = remoteUserAgent.value,
+						onValueChange = { remoteUserAgent.value = it },
+						label = { Text("User-Agent (可选)") },
+						placeholder = { Text("自定义浏览器标识") },
+						singleLine = true,
+						modifier = Modifier.fillMaxWidth(),
+					)
+					OutlinedTextField(
+						value = remoteProxyUrl.value,
+						onValueChange = { remoteProxyUrl.value = it },
+						label = { Text("HTTP 代理 (可选)") },
+						placeholder = { Text("http://proxy.example.com:8080") },
+						singleLine = true,
+						modifier = Modifier.fillMaxWidth(),
+					)
+					Row(
+						verticalAlignment = Alignment.CenterVertically,
+						modifier =
+							Modifier.clickable {
+								remoteAutoUpdate.value = !remoteAutoUpdate.value
+							},
+					) {
+						Icon(
+							if (remoteAutoUpdate.value) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
+							contentDescription = null,
+						)
+						Spacer(modifier = Modifier.width(8.dp))
+						Text("启用自动更新")
+					}
+				}
+			},
+			confirmButton = {
+				TextButton(
+					onClick = {
+						if (remoteName.value.isNotBlank() && remoteUrl.value.isNotBlank()) {
+							vm.addRemoteProfile(
+								context,
+								remoteName.value,
+								remoteUrl.value,
+								remoteAutoUpdate.value,
+								remoteUserAgent.value.takeIf { it.isNotBlank() },
+								remoteProxyUrl.value.takeIf { it.isNotBlank() },
+							)
+							showRemoteDialog.value = false
+							remoteName.value = ""
+							remoteUrl.value = ""
+							remoteAutoUpdate.value = false
+							remoteUserAgent.value = ""
+							remoteProxyUrl.value = ""
+						}
+					},
+					enabled = remoteName.value.isNotBlank() && remoteUrl.value.isNotBlank() && !vm.isDownloading,
+				) {
+					if (vm.isDownloading) {
+						CircularProgressIndicator(
+							modifier = Modifier.size(16.dp),
+							strokeWidth = 2.dp,
+						)
+					} else {
+						Text("确定")
+					}
+				}
+			},
+			dismissButton = {
+				TextButton(
+					onClick = {
+						showRemoteDialog.value = false
+						remoteName.value = ""
+						remoteUrl.value = ""
+						remoteAutoUpdate.value = false
+						remoteUserAgent.value = ""
+						remoteProxyUrl.value = ""
+					},
+					enabled = !vm.isDownloading,
+				) {
+					Text("取消")
+				}
+			},
 		)
 	}
 
@@ -223,19 +345,8 @@ fun ProfileScreen(
 					style = MaterialTheme.typography.titleMedium,
 					fontWeight = FontWeight.Bold,
 				)
-				
-				vm.profiles.forEach { profile ->
-					ProfileCard(
-						profile = profile,
-						onActivate = { vm.activateProfile(context, profile) },
-						onDelete = { vm.deleteProfile(context, profile) },
-						onRename = { newName -> vm.renameProfile(context, profile, newName) },
-						modifier = Modifier.fillMaxWidth(),
-					)
-				}
 			}
 
-			// Verification Result Card
 			if (vm.verificationResult != null) {
 				VerificationResultCard(
 					result = vm.verificationResult!!,
@@ -246,20 +357,56 @@ fun ProfileScreen(
 
 			Spacer(modifier = Modifier.height(8.dp))
 
-			// Action Button
-			FilledTonalButton(
-				onClick = {
-					launcher.launch(arrayOf("*/*"))
-				},
-				modifier = Modifier.fillMaxWidth(),
-			) {
-				Icon(
-					Icons.Default.FolderOpen,
-					contentDescription = null,
-					modifier = Modifier.size(20.dp),
+			// Display all profiles
+			vm.profiles.forEach { profile ->
+				ProfileCard(
+					profile = profile,
+					onActivate = { vm.activateProfile(context, profile) },
+					onDelete = { vm.deleteProfile(context, profile) },
+					onRename = { newName -> vm.renameProfile(context, profile, newName) },
+					onUpdate = if (profile.type == rs.clash.android.model.ProfileType.REMOTE) {
+						{ vm.updateRemoteProfile(context, profile) }
+					} else null,
+					modifier = Modifier.fillMaxWidth(),
 				)
-				Spacer(modifier = Modifier.width(8.dp))
-				Text("添加配置")
+			}
+
+			Spacer(modifier = Modifier.height(8.dp))
+
+			// Action Buttons
+			Row(
+				modifier = Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.spacedBy(8.dp),
+			) {
+				FilledTonalButton(
+					onClick = {
+						launcher.launch(arrayOf("*/*"))
+					},
+					modifier = Modifier.weight(1f),
+				) {
+					Icon(
+						Icons.Default.FolderOpen,
+						contentDescription = null,
+						modifier = Modifier.size(20.dp),
+					)
+					Spacer(modifier = Modifier.width(8.dp))
+					Text("本地配置")
+				}
+				
+				FilledTonalButton(
+					onClick = {
+						showRemoteDialog.value = true
+					},
+					modifier = Modifier.weight(1f),
+				) {
+					Icon(
+						Icons.Default.Refresh,
+						contentDescription = null,
+						modifier = Modifier.size(20.dp),
+					)
+					Spacer(modifier = Modifier.width(8.dp))
+					Text("远程配置")
+				}
 			}
 		}
 	}
@@ -346,6 +493,7 @@ fun ProfileCard(
 	onActivate: () -> Unit,
 	onDelete: () -> Unit,
 	onRename: (String) -> Unit,
+	onUpdate: (() -> Unit)? = null,
 	modifier: Modifier = Modifier,
 ) {
 	val showMenu = remember { mutableStateOf(false) }
@@ -408,11 +556,22 @@ fun ProfileCard(
 			)
 			Spacer(modifier = Modifier.width(16.dp))
 			Column(modifier = Modifier.weight(1f)) {
-				Text(
-					text = profile.name,
-					style = MaterialTheme.typography.bodyLarge,
-					fontWeight = if (profile.isActive) FontWeight.Bold else FontWeight.Normal,
-				)
+				Row(verticalAlignment = Alignment.CenterVertically) {
+					Text(
+						text = profile.name,
+						style = MaterialTheme.typography.bodyLarge,
+						fontWeight = if (profile.isActive) FontWeight.Bold else FontWeight.Normal,
+					)
+					if (profile.type == rs.clash.android.model.ProfileType.REMOTE) {
+						Spacer(modifier = Modifier.width(4.dp))
+						Icon(
+							Icons.Default.Refresh,
+							contentDescription = "Remote",
+							tint = MaterialTheme.colorScheme.primary,
+							modifier = Modifier.size(16.dp),
+						)
+					}
+				}
 				Spacer(modifier = Modifier.height(2.dp))
 				Text(
 					text = formatFileSize(profile.fileSize),
@@ -424,6 +583,13 @@ fun ProfileCard(
 					style = MaterialTheme.typography.bodySmall,
 					color = MaterialTheme.colorScheme.onSurfaceVariant,
 				)
+				if (profile.type == rs.clash.android.model.ProfileType.REMOTE && profile.lastUpdated != null) {
+					Text(
+						text = "更新: ${dateFormat.format(Date(profile.lastUpdated))}",
+						style = MaterialTheme.typography.bodySmall,
+						color = MaterialTheme.colorScheme.primary,
+					)
+				}
 			}
 			
 			Box {
@@ -447,6 +613,18 @@ fun ProfileCard(
 							},
 							leadingIcon = {
 								Icon(Icons.Default.CheckCircle, contentDescription = null)
+							},
+						)
+					}
+					if (profile.type == rs.clash.android.model.ProfileType.REMOTE && onUpdate != null) {
+						DropdownMenuItem(
+							text = { Text("更新配置") },
+							onClick = {
+								onUpdate()
+								showMenu.value = false
+							},
+							leadingIcon = {
+								Icon(Icons.Default.Refresh, contentDescription = null)
 							},
 						)
 					}

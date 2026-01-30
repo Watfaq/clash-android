@@ -9,4 +9,4 @@ plugins {
 	alias(libs.plugins.ktlint) apply false
 }
 val buildToolsVersion by extra("36.0.0")
-val ndkVersion by extra("27.3.13750724")
+val ndkVersion by extra("29.0.14206865")

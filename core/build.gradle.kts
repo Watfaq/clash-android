@@ -8,6 +8,7 @@ plugins {
 android {
     namespace = "rs.clash.android.ffi"
     compileSdk = 36
+
     ndkVersion = rootProject.extra["ndkVersion"] as String
     defaultConfig {
         minSdk = 23
