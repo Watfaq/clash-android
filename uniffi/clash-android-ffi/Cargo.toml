@@ -9,8 +9,8 @@ edition.workspace = true
 crate-type = ["cdylib"]
 
 [features]
-tokio-console = []
 ffi-trace = ["uniffi/ffi-trace"]
+jemallocator = ["dep:tikv-jemallocator"]
 
 [dependencies]
 uniffi.workspace = true
@@ -43,6 +43,9 @@ urlencoding = "2"
 hyper-http-proxy = { version = "1", default-features = false, features = ["rustls-tls-webpki-roots"] }
 hyper-rustls = { version = "0.27", features = ["webpki-tokio", "http1", "tls12", "logging", "aws-lc-rs"] }
 webpki-roots = "1"
+
+# Memory allocator
+tikv-jemallocator = { version = "0.6", optional = true }
 
 [dependencies.clash-lib]
 package = "clash-lib"

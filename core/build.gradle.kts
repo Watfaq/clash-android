@@ -47,7 +47,14 @@ dependencies {
 cargoNdk {
     module  = "uniffi"  // Directory containing Cargo.toml
     librariesNames = arrayListOf("libclash_android_ffi.so")
-    extraCargoBuildArguments = arrayListOf("-p", "clash-android-ffi")
+
+    extraCargoBuildArguments = arrayListOf("-p", "clash-android-ffi").apply {
+        // Enable jemallocator feature on Linux
+        if (System.getProperty("os.name").lowercase().contains("linux")) {
+            add("--features")
+            add("jemallocator")
+        }
+    }
 	buildType = "release"
 }
 

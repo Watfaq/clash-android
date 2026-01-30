@@ -1,3 +1,7 @@
+#[cfg(feature = "jemallocator")]
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 use async_compat::set_runtime_builder;
 use clash_lib::app::dns;
 
