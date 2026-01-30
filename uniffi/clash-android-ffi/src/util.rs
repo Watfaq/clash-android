@@ -19,7 +19,6 @@ pub async fn download_config(
 ) -> Result<DownloadResult, EyreError> {
     use http_body_util::BodyExt;
     use hyper_util::client::legacy::Client;
-    use hyper_util::client::legacy::connect::HttpConnector;
     use hyper_util::rt::TokioExecutor;
 
     info!("Starting download from: {}", url);
@@ -32,6 +31,7 @@ pub async fn download_config(
     // Build client with or without proxy
     let response = if let Some(proxy) = proxy_url {
         use hyper_http_proxy::{Intercept, Proxy, ProxyConnector};
+        use hyper_rustls::HttpsConnectorBuilder;
 
         info!("Using proxy: {}", proxy);
         let proxy_uri: hyper::Uri = proxy
@@ -39,42 +39,48 @@ pub async fn download_config(
             .map_err(|e| eyre::eyre!("Invalid proxy URL: {}", e))?;
 
         let proxy = Proxy::new(Intercept::All, proxy_uri);
-        let connector = HttpConnector::new();
-        let proxy_connector = ProxyConnector::from_proxy_unsecured(connector, proxy);
+        let https_connector = HttpsConnectorBuilder::new()
+            .with_native_roots()
+            .map_err(|e| eyre::eyre!("Failed to load native roots: {}", e))?
+            .https_or_http()
+            .enable_http1()
+            .build();
+        let proxy_connector = ProxyConnector::from_proxy(https_connector, proxy)
+            .map_err(|e| eyre::eyre!("Failed to create proxy connector: {}", e))?;
 
         let client = Client::builder(TokioExecutor::new()).build(proxy_connector);
 
         // Build request with proper headers
-        let host = uri.host().ok_or_else(|| eyre::eyre!("Missing host in URL"))?;
         let req = hyper::Request::builder()
             .method("GET")
             .uri(&uri)
-            .header("Host", host)
             .header("User-Agent", &ua)
             .header("Accept", "*/*")
-            .header("Accept-Encoding", "identity")
-            .header("Connection", "close")
             .body(http_body_util::Empty::<bytes::Bytes>::new())
             .map_err(|e| eyre::eyre!("Failed to build request: {}", e))?;
 
         info!("Sending request with proxy to: {}", uri);
         client.request(req).await?
     } else {
-        let client: Client<_, http_body_util::Empty<bytes::Bytes>> =
-            Client::builder(TokioExecutor::new()).build_http();
+        use hyper_rustls::HttpsConnectorBuilder;
+
+        let https_connector = HttpsConnectorBuilder::new()
+            .with_native_roots()
+            .context("Failed to load native roots")?
+            .https_or_http()
+            .enable_http1()
+            .build();
+
+        let client = Client::builder(TokioExecutor::new()).build(https_connector);
 
         // Build request with proper headers
-        let host = uri.host().ok_or_else(|| eyre::eyre!("Missing host in URL"))?;
         let req = hyper::Request::builder()
             .method("GET")
             .uri(&uri)
-            .header("Host", host)
             .header("User-Agent", &ua)
             .header("Accept", "*/*")
-            .header("Accept-Encoding", "identity")
-            .header("Connection", "close")
             .body(http_body_util::Empty::<bytes::Bytes>::new())
-            .map_err(|e| eyre::eyre!("Failed to build request: {}", e))?;
+            .context("Failed to build request")?;
 
         info!("Sending request to: {}", uri);
         client.request(req).await?
@@ -82,6 +88,7 @@ pub async fn download_config(
 
     if !response.status().is_success() {
         let status = response.status();
+
         error!("HTTP request failed with status: {} for URL: {}", status, url);
         return Ok(DownloadResult {
             success: false,

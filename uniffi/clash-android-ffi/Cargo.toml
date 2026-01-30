@@ -41,6 +41,7 @@ http-body-util = "0.1"
 hyperlocal = "0.9"
 urlencoding = "2"
 hyper-http-proxy = "1"
+hyper-rustls = "0.27"
 
 [dependencies.clash-lib]
 package = "clash-lib"
