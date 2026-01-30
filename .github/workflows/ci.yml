@@ -191,16 +191,16 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             # For release: use previous v tag to current v tag
             CURRENT_TAG="${GITHUB_REF#refs/tags/}"
-            # Get the previous v* tag
-            PREVIOUS_TAG=$(git tag -l "v*" --sort=-version:refname | grep -v "^${CURRENT_TAG}$" | head -n 1)
+            # Get the previous v* tag (use -F for fixed string matching)
+            PREVIOUS_TAG=$(git tag -l "v*" --sort=-version:refname | grep -F -v "${CURRENT_TAG}" | head -n 1)
             
             if [ -z "$PREVIOUS_TAG" ]; then
               # No previous tag found, use all commits up to current tag
               echo "range=${CURRENT_TAG}" >> $GITHUB_OUTPUT
-              echo "args=--tag ${CURRENT_TAG} --strip header" >> $GITHUB_OUTPUT
+              echo "args=--tag ${CURRENT_TAG}" >> $GITHUB_OUTPUT
             else
               echo "range=${PREVIOUS_TAG}..${CURRENT_TAG}" >> $GITHUB_OUTPUT
-              echo "args=${PREVIOUS_TAG}..${CURRENT_TAG} --strip header" >> $GITHUB_OUTPUT
+              echo "args=${PREVIOUS_TAG}..${CURRENT_TAG}" >> $GITHUB_OUTPUT
             fi
           else
             # For prerelease: use most recent v* tag to current commit
@@ -209,10 +209,10 @@ jobs:
             if [ -z "$LATEST_TAG" ]; then
               # No v* tag found, use all commits
               echo "range=HEAD" >> $GITHUB_OUTPUT
-              echo "args=--strip header" >> $GITHUB_OUTPUT
+              echo "args=" >> $GITHUB_OUTPUT
             else
               echo "range=${LATEST_TAG}..HEAD" >> $GITHUB_OUTPUT
-              echo "args=${LATEST_TAG}..HEAD --strip header" >> $GITHUB_OUTPUT
+              echo "args=${LATEST_TAG}..HEAD" >> $GITHUB_OUTPUT
             fi
           fi
 
@@ -222,7 +222,7 @@ jobs:
         id: git-cliff
         with:
           config: .github/cliff.toml
-          args: ${{ steps.commit-range.outputs.args }}
+          args: ${{ steps.commit-range.outputs.args }} --strip header
         env:
           GITHUB_REPO: ${{ github.repository }}
           OUTPUT: CHANGELOG.md
