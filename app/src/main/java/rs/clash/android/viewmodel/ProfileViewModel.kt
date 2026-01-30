@@ -20,7 +20,7 @@ import rs.clash.android.Global
 import rs.clash.android.model.Profile
 import rs.clash.android.model.ProfileType
 import uniffi.clash_android_ffi.EyreException
-import uniffi.clash_android_ffi.downloadConfigFromUrl
+import uniffi.clash_android_ffi.downloadConfig
 import uniffi.clash_android_ffi.formatEyreError
 import uniffi.clash_android_ffi.verifyConfig
 import java.io.File
@@ -320,7 +320,7 @@ class ProfileViewModel : ViewModel() {
 				// Download config from URL using Rust FFI
 				withContext(Dispatchers.IO) {
 					val result =
-						downloadConfigFromUrl(
+						downloadConfig(
 							url,
 							file.absolutePath,
 							userAgent,
@@ -414,7 +414,7 @@ class ProfileViewModel : ViewModel() {
 					val effectiveUserAgent = userAgent ?: profile.userAgent
 					val effectiveProxyUrl = proxyUrl ?: profile.proxyUrl
 					val result =
-						uniffi.clash_android_ffi.downloadConfigFromUrl(
+						downloadConfig(
 							profile.url,
 							file.absolutePath,
 							effectiveUserAgent,

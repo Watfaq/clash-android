@@ -13,10 +13,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import rs.clash.android.Global
-import rs.clash.android.ffi.initClash
 import rs.clash.android.util.NotificationHelper
 import rs.clash.android.util.PermissionHelper
 import uniffi.clash_android_ffi.ProfileOverride
+import uniffi.clash_android_ffi.runClash
 import uniffi.clash_android_ffi.shutdown
 import java.io.File
 
@@ -126,12 +126,11 @@ class TunService : VpnService() {
 				}
 		}
 
-		val finalProfile = initClash(
+		val finalProfile = runClash(
 			Global.profilePath,
 			Global.application.cacheDir.toString(),
 			ProfileOverride(
 				tunFd!!,
-				"${Global.application.cacheDir}/clash-rs.log",
 				fakeIp = prefs.getBoolean("fake_ip", false),
 				ipv6 = prefs.getBoolean("ipv6", true),
 			),

@@ -8,7 +8,6 @@ use clash_lib::{
     config::{config::Controller, def::LogLevel},
     start,
 };
-use eyre::Context;
 use once_cell::sync::OnceCell;
 use std::path::PathBuf;
 use std::{
@@ -25,6 +24,7 @@ use clash_lib::config::internal::config::TunConfig;
 
 pub mod controller;
 pub mod log;
+pub mod util;
 
 type EyreError = eyre::Error;
 #[uniffi::remote(Object)]
@@ -38,7 +38,6 @@ pub fn format_eyre_error(err: &EyreError) -> String {
 #[derive(uniffi::Record)]
 pub struct ProfileOverride {
     pub tun_fd: i32,
-    pub log_file_path: String,
 
     #[uniffi(default = false)]
     pub allow_lan: bool,
@@ -85,6 +84,44 @@ pub extern "system" fn java_init(
         builder
     };
     set_runtime_builder(Box::new(builder));
+
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        // Setup panic hook to capture panics on Android
+        std::panic::set_hook(Box::new(|panic_info| {
+            let payload = panic_info.payload();
+            let message = if let Some(s) = payload.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = payload.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic payload".to_string()
+            };
+
+            let location = if let Some(loc) = panic_info.location() {
+                format!("{}:{}:{}", loc.file(), loc.line(), loc.column())
+            } else {
+                "Unknown location".to_string()
+            };
+
+            error!("PANIC caught: {} at {}", message, location);
+            error!("Backtrace:\n{}", std::backtrace::Backtrace::force_capture());
+        }));
+
+        let level = if cfg!(debug_assertions) {
+            LogLevel::Debug
+        } else {
+            LogLevel::Info
+        };
+
+        unsafe {
+            std::env::set_var("RUST_BACKTRACE", "1");
+            // std::env::set_var("NO_COLOR", "1");
+        }
+        init_logger(level.into());
+        color_eyre::install().unwrap();
+        tracing::info!("Init logger and panic hook");
+    });
 }
 
 #[uniffi::export]
@@ -94,7 +131,7 @@ fn verify_config(config_path: &str) -> Result<String, EyreError> {
 }
 
 #[uniffi::export(async_runtime = "tokio")]
-async fn init_main(
+async fn run_clash(
     config_path: String,
     work_dir: String,
     over: ProfileOverride,
@@ -201,46 +238,7 @@ async fn init_main(
         config.dns.enhance_mode = DNSMode::Normal;
     }
 
-    #[cfg(debug_assertions)]
-    {
-        config.general.log_level = LogLevel::Debug;
-    }
-
-    unsafe {
-        std::env::set_var("RUST_BACKTRACE", "1");
-        // std::env::set_var("NO_COLOR", "1");
-    }
-    static INIT: Once = Once::new();
-    INIT.call_once(|| {
-        // Setup panic hook to capture panics on Android
-        std::panic::set_hook(Box::new(|panic_info| {
-            let payload = panic_info.payload();
-            let message = if let Some(s) = payload.downcast_ref::<&str>() {
-                s.to_string()
-            } else if let Some(s) = payload.downcast_ref::<String>() {
-                s.clone()
-            } else {
-                "Unknown panic payload".to_string()
-            };
-
-            let location = if let Some(loc) = panic_info.location() {
-                format!("{}:{}:{}", loc.file(), loc.line(), loc.column())
-            } else {
-                "Unknown location".to_string()
-            };
-
-            error!("PANIC caught: {} at {}", message, location);
-            error!("Backtrace:\n{}", std::backtrace::Backtrace::force_capture());
-        }));
-
-        init_logger(config.general.log_level.into(), None);
-        color_eyre::install().unwrap();
-        tracing::info!("Init logger and panic hook");
-    });
-    info!(
-        "Config path: {config_path}\n\tTUN fd: {}\n\tLog file path: {}",
-        over.tun_fd, over.log_file_path
-    );
+    info!("Config path: {config_path}\n\tTUN fd: {}", over.tun_fd);
 
     let _: JoinHandle<eyre::Result<()>> = tokio::spawn(async {
         let (log_tx, _) = broadcast::channel(100);
@@ -259,104 +257,6 @@ async fn init_main(
 fn shutdown() {
     clash_lib::shutdown();
     info!("clashrs shutdown");
-}
-
-#[derive(uniffi::Record)]
-pub struct DownloadResult {
-    pub success: bool,
-    pub file_size: u64,
-    pub error_message: Option<String>,
-}
-
-#[uniffi::export(async_runtime = "tokio")]
-async fn download_config_from_url(
-    url: String,
-    output_path: String,
-    user_agent: Option<String>,
-    proxy_url: Option<String>,
-) -> Result<DownloadResult, EyreError> {
-    use http_body_util::BodyExt;
-    use hyper_util::client::legacy::Client;
-    use hyper_util::client::legacy::connect::HttpConnector;
-    use hyper_util::rt::TokioExecutor;
-
-    info!("Starting download from: {}", url);
-
-    let uri: hyper::Uri = url.parse().map_err(|e| eyre::eyre!("Invalid URL: {}", e))?;
-
-    let ua = user_agent.unwrap_or_else(|| "clash-android/1.0".to_string());
-    info!("Using User-Agent: {}", ua);
-
-    // Build client with or without proxy
-    let response = if let Some(proxy) = proxy_url {
-        use hyper_http_proxy::{Intercept, Proxy, ProxyConnector};
-
-        info!("Using proxy: {}", proxy);
-        let proxy_uri: hyper::Uri = proxy
-            .parse()
-            .map_err(|e| eyre::eyre!("Invalid proxy URL: {}", e))?;
-
-        let proxy = Proxy::new(Intercept::All, proxy_uri);
-        let connector = HttpConnector::new();
-        let proxy_connector = ProxyConnector::from_proxy_unsecured(connector, proxy);
-
-        let client = Client::builder(TokioExecutor::new()).build(proxy_connector);
-
-        // Build request
-        let req = hyper::Request::builder()
-            .uri(&uri)
-            .header("User-Agent", &ua)
-            .body(http_body_util::Empty::<bytes::Bytes>::new())
-            .map_err(|e| eyre::eyre!("Failed to build request: {}", e))?;
-
-        client.request(req).await?
-    } else {
-        let client: Client<_, http_body_util::Full<bytes::Bytes>> =
-            Client::builder(TokioExecutor::new()).build_http();
-
-        let req = hyper::Request::builder()
-            .uri(&uri)
-            .header("User-Agent", &ua)
-            .body(http_body_util::Full::new(bytes::Bytes::new()))?;
-
-        client.request(req).await?
-    };
-
-    if !response.status().is_success() {
-        return Ok(DownloadResult {
-            success: false,
-            file_size: 0,
-            error_message: Some(format!("HTTP error: {}", response.status())),
-        });
-    }
-
-    // Download response body
-    let body = response.into_body();
-    let bytes = body
-        .collect()
-        .await
-        .map_err(|e| eyre::eyre!("Failed to read response body: {}", e))?
-        .to_bytes();
-
-    // Create output file and write
-    _ = tokio::fs::File::create(&output_path)
-        .await
-        .context(format!("Failed to create file: {output_path}"))?;
-    tokio::fs::write(&output_path, &bytes)
-        .await
-        .context(format!("Failed to write to file: {output_path}"))?;
-
-    let file_size = bytes.len() as u64;
-    info!(
-        "Download completed: {} bytes written to {}",
-        file_size, output_path
-    );
-
-    Ok(DownloadResult {
-        success: true,
-        file_size,
-        error_message: None,
-    })
 }
 
 uniffi::setup_scaffolding!("clash_android_ffi");
