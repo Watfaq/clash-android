@@ -18,6 +18,7 @@ class Application : AndroidApplication() {
 object Global {
 	var profilePath: String = ""
 	val isServiceRunning = MutableStateFlow(false)
+	var proxyPort: UShort? = null
 	lateinit var application: Application
 }
 

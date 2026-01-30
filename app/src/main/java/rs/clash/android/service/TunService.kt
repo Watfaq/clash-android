@@ -126,7 +126,7 @@ class TunService : VpnService() {
 				}
 		}
 
-		initClash(
+		val finalProfile = initClash(
 			Global.profilePath,
 			Global.application.cacheDir.toString(),
 			ProfileOverride(
@@ -136,6 +136,7 @@ class TunService : VpnService() {
 				ipv6 = prefs.getBoolean("ipv6", true),
 			),
 		)
+		Global.proxyPort = finalProfile.mixedPort
 	}
 
 	private fun startForegroundServiceIfNeeded() {
@@ -187,6 +188,7 @@ class TunService : VpnService() {
 		vpnInterface = null
 		tunFd = null
 		tunService = null
+		Global.proxyPort = null
 		Global.isServiceRunning.value = false
 		isDestroying = false
 	}

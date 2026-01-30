@@ -65,6 +65,7 @@ import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.R
 import rs.clash.android.model.Profile
+import rs.clash.android.model.ProfileType
 import rs.clash.android.ui.components.TextInfoDialog
 import rs.clash.android.viewmodel.ProfileViewModel
 import java.text.SimpleDateFormat
@@ -364,9 +365,12 @@ fun ProfileScreen(
 					onActivate = { vm.activateProfile(context, profile) },
 					onDelete = { vm.deleteProfile(context, profile) },
 					onRename = { newName -> vm.renameProfile(context, profile, newName) },
-					onUpdate = if (profile.type == rs.clash.android.model.ProfileType.REMOTE) {
-						{ vm.updateRemoteProfile(context, profile) }
-					} else null,
+					onUpdate =
+						if (profile.type == ProfileType.REMOTE) {
+							{ vm.updateRemoteProfile(context, profile) }
+						} else {
+							null
+						},
 					modifier = Modifier.fillMaxWidth(),
 				)
 			}

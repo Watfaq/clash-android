@@ -3,6 +3,7 @@ package rs.clash.android.viewmodel
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -19,6 +20,7 @@ import rs.clash.android.Global
 import rs.clash.android.model.Profile
 import rs.clash.android.model.ProfileType
 import uniffi.clash_android_ffi.EyreException
+import uniffi.clash_android_ffi.downloadConfigFromUrl
 import uniffi.clash_android_ffi.formatEyreError
 import uniffi.clash_android_ffi.verifyConfig
 import java.io.File
@@ -255,12 +257,6 @@ class ProfileViewModel : ViewModel() {
 		}
 	}
 
-	fun formatFileSize(size: Long): String {
-		if (size <= 0) return "0 B"
-		val units = arrayOf("B", "KB", "MB", "GB")
-		val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
-		return String.format(Locale.US, "%.1f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
-	}
 
 	fun verify(path: String): Pair<Boolean, String> =
 		try {
@@ -316,14 +312,19 @@ class ProfileViewModel : ViewModel() {
 				val fileName = profileName.replace(Regex("[^a-zA-Z0-9\\u4e00-\\u9fa5_-]"), "_")
 				val file = File(context.filesDir, fileName)
 				
+				// Auto-detect proxy if VPN is running and user didn't specify one
+				val effectiveProxyUrl = proxyUrl ?: Global.proxyPort?.let { port ->
+					"http://127.0.0.1:$port"
+				}
+				
 				// Download config from URL using Rust FFI
 				withContext(Dispatchers.IO) {
 					val result =
-						uniffi.clash_android_ffi.downloadConfigFromUrl(
+						downloadConfigFromUrl(
 							url,
 							file.absolutePath,
 							userAgent,
-							proxyUrl,
+							effectiveProxyUrl,
 						)
 					
 					if (!result.success) {
@@ -369,12 +370,23 @@ class ProfileViewModel : ViewModel() {
 								userAgent = userAgent,
 								proxyUrl = proxyUrl,
 							)
+						profiles.add(newProfile)
 						saveProfiles()
+						Toast.makeText(context, "远程配置添加成功", Toast.LENGTH_SHORT).show()
 					}
 				}
-			} catch (e: Exception) {
+			} catch (e: EyreException){
+				val errorMessage = formatEyreError(e)
+
+				Log.e("profile", errorMessage)
 				withContext(Dispatchers.Main) {
-					Toast.makeText(context, "添加失败: ${e.message}", Toast.LENGTH_LONG).show()
+					Toast.makeText(context, "添加失败: $errorMessage", Toast.LENGTH_LONG).show()
+				}
+			} catch (e: Exception) {
+				val errorMessage = e.message ?: e.toString()
+				Log.e("profile", errorMessage)
+				withContext(Dispatchers.Main) {
+					Toast.makeText(context, "添加失败: $errorMessage", Toast.LENGTH_LONG).show()
 				}
 			} finally {
 				isDownloading = false

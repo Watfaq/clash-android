@@ -2,13 +2,15 @@ use async_compat::set_runtime_builder;
 use clash_lib::app::dns;
 
 use clash_lib::app::dns::config::{DNSListenAddr, DNSNetMode, NameServer};
-use clash_lib::config::def::DNSMode;
+use clash_lib::config::def::{DNSMode, Port};
 use clash_lib::{
     Config,
     config::{config::Controller, def::LogLevel},
     start,
 };
+use eyre::Context;
 use once_cell::sync::OnceCell;
+use std::path::PathBuf;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     sync::Once,
@@ -18,6 +20,7 @@ use log::init_logger;
 use tokio::{sync::broadcast, task::JoinHandle};
 use tracing::{error, info};
 
+use clash_lib::config::def::Config as ConfigDef;
 use clash_lib::config::internal::config::TunConfig;
 
 pub mod controller;
@@ -29,7 +32,7 @@ pub struct EyreError;
 
 #[uniffi::export]
 pub fn format_eyre_error(err: &EyreError) -> String {
-    format!("{:#}", err)
+    format!("{}", err.to_string())
 }
 
 #[derive(uniffi::Record)]
@@ -42,10 +45,10 @@ pub struct ProfileOverride {
 
     #[uniffi(default = 7890)]
     pub mixed_port: u16,
-    #[uniffi(default = 7891)]
-    pub http_port: u16,
-    #[uniffi(default = 7892)]
-    pub socks_port: u16,
+    #[uniffi(default = None)]
+    pub http_port: Option<u16>,
+    #[uniffi(default = None)]
+    pub socks_port: Option<u16>,
     #[uniffi(default = false)]
     pub fake_ip: bool,
 
@@ -54,12 +57,13 @@ pub struct ProfileOverride {
 
     #[uniffi(default = true)]
     pub ipv6: bool,
-
-    #[uniffi(default = true)]
-    pub some_flag: bool,
 }
 
-
+#[derive(uniffi::Record, Default)]
+pub struct FinalProfile {
+    #[uniffi(default = 7890)]
+    pub mixed_port: u16,
+}
 
 #[unsafe(export_name = "Java_rs_clash_android_MainActivity_javaInit")]
 pub extern "system" fn java_init(
@@ -94,9 +98,15 @@ async fn init_main(
     config_path: String,
     work_dir: String,
     over: ProfileOverride,
-) -> Result<(), EyreError> {
+) -> Result<FinalProfile, EyreError> {
     std::env::set_current_dir(&work_dir)?;
-    let mut config = Config::File(config_path.clone()).try_parse()?;
+    let mut final_profile = FinalProfile::default();
+    let mut config_def = ConfigDef::try_from(PathBuf::from(config_path.clone()))?;
+    final_profile.mixed_port = config_def.mixed_port.get_or_insert(Port(over.mixed_port)).0;
+    config_def.port = config_def.port.or_else(|| over.http_port.map(Port));
+    config_def.socks_port = config_def.socks_port.or_else(|| over.socks_port.map(Port));
+
+    let mut config = Config::Def(config_def).try_parse()?;
     config.tun = TunConfig {
         enable: true,
         device_id: format!("fd://{}", over.tun_fd),
@@ -242,7 +252,7 @@ async fn init_main(
         info!("Quitting clash-rs");
         Ok(())
     });
-    Ok(())
+    Ok(final_profile)
 }
 
 #[uniffi::export]
@@ -266,56 +276,50 @@ async fn download_config_from_url(
     proxy_url: Option<String>,
 ) -> Result<DownloadResult, EyreError> {
     use http_body_util::BodyExt;
-    use std::io::Write;
     use hyper_util::client::legacy::Client;
     use hyper_util::client::legacy::connect::HttpConnector;
     use hyper_util::rt::TokioExecutor;
 
     info!("Starting download from: {}", url);
 
-    let uri: hyper::Uri = url.parse()
-        .map_err(|e| eyre::eyre!("Invalid URL: {}", e))?;
-    
+    let uri: hyper::Uri = url.parse().map_err(|e| eyre::eyre!("Invalid URL: {}", e))?;
+
     let ua = user_agent.unwrap_or_else(|| "clash-android/1.0".to_string());
     info!("Using User-Agent: {}", ua);
 
     // Build client with or without proxy
     let response = if let Some(proxy) = proxy_url {
-        use hyper_http_proxy::{Proxy, ProxyConnector, Intercept};
-        
+        use hyper_http_proxy::{Intercept, Proxy, ProxyConnector};
+
         info!("Using proxy: {}", proxy);
-        let proxy_uri: hyper::Uri = proxy.parse()
+        let proxy_uri: hyper::Uri = proxy
+            .parse()
             .map_err(|e| eyre::eyre!("Invalid proxy URL: {}", e))?;
-        
+
         let proxy = Proxy::new(Intercept::All, proxy_uri);
         let connector = HttpConnector::new();
         let proxy_connector = ProxyConnector::from_proxy_unsecured(connector, proxy);
-        
+
         let client = Client::builder(TokioExecutor::new()).build(proxy_connector);
-        
+
         // Build request
         let req = hyper::Request::builder()
             .uri(&uri)
             .header("User-Agent", &ua)
             .body(http_body_util::Empty::<bytes::Bytes>::new())
             .map_err(|e| eyre::eyre!("Failed to build request: {}", e))?;
-        
-        client.request(req)
-            .await
-            .map_err(|e| eyre::eyre!("Failed to download via proxy: {}", e))?
+
+        client.request(req).await?
     } else {
-        let client: Client<_, http_body_util::Full<bytes::Bytes>> = 
+        let client: Client<_, http_body_util::Full<bytes::Bytes>> =
             Client::builder(TokioExecutor::new()).build_http();
-        
+
         let req = hyper::Request::builder()
             .uri(&uri)
             .header("User-Agent", &ua)
-            .body(http_body_util::Full::new(bytes::Bytes::new()))
-            .map_err(|e| eyre::eyre!("Failed to build request: {}", e))?;
+            .body(http_body_util::Full::new(bytes::Bytes::new()))?;
 
-        client.request(req)
-            .await
-            .map_err(|e| eyre::eyre!("Failed to download: {}", e))?
+        client.request(req).await?
     };
 
     if !response.status().is_success() {
@@ -335,14 +339,18 @@ async fn download_config_from_url(
         .to_bytes();
 
     // Create output file and write
-    let mut file = std::fs::File::create(&output_path)
-        .map_err(|e| eyre::eyre!("Failed to create file: {}", e))?;
-    
-    file.write_all(&bytes)
-        .map_err(|e| eyre::eyre!("Failed to write to file: {}", e))?;
+    _ = tokio::fs::File::create(&output_path)
+        .await
+        .context(format!("Failed to create file: {output_path}"))?;
+    tokio::fs::write(&output_path, &bytes)
+        .await
+        .context(format!("Failed to write to file: {output_path}"))?;
 
     let file_size = bytes.len() as u64;
-    info!("Download completed: {} bytes written to {}", file_size, output_path);
+    info!(
+        "Download completed: {} bytes written to {}",
+        file_size, output_path
+    );
 
     Ok(DownloadResult {
         success: true,
