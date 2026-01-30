@@ -40,8 +40,7 @@ pub async fn download_config(
 
         let proxy = Proxy::new(Intercept::All, proxy_uri);
         let https_connector = HttpsConnectorBuilder::new()
-            .with_native_roots()
-            .map_err(|e| eyre::eyre!("Failed to load native roots: {}", e))?
+            .with_webpki_roots()
             .https_or_http()
             .enable_http1()
             .build();
@@ -65,8 +64,7 @@ pub async fn download_config(
         use hyper_rustls::HttpsConnectorBuilder;
 
         let https_connector = HttpsConnectorBuilder::new()
-            .with_native_roots()
-            .context("Failed to load native roots")?
+            .with_webpki_roots()
             .https_or_http()
             .enable_http1()
             .build();

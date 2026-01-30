@@ -40,8 +40,9 @@ hyper-util = { version = "0.1", features = ["client", "client-legacy", "tokio"] 
 http-body-util = "0.1"
 hyperlocal = "0.9"
 urlencoding = "2"
-hyper-http-proxy = "1"
+hyper-http-proxy = { version = "1", default-features = false, features = ["rustls-tls-webpki-roots"] }
 hyper-rustls = { version = "0.27", features = ["webpki-tokio", "http1", "tls12", "logging", "aws-lc-rs"] }
+webpki-roots = "1"
 
 [dependencies.clash-lib]
 package = "clash-lib"
