@@ -1,5 +1,6 @@
 [build]
 #target = "aarch64-linux-android"
+rustc-wrapper = "sccache"
 
 [target.aarch64-linux-android]
 linker = "aarch64-linux-android23-clang"
@@ -12,7 +13,3 @@ linker = "i686-linux-android23-clang"
 
 [target.x86_64-linux-android]
 linker = "x86_64-linux-android23-clang"
-
-[env]
-# Force CMake to use Ninja generator instead of MSBuild on Windows
-CMAKE_GENERATOR = "Ninja"
