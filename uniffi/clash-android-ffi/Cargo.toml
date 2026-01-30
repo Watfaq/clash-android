@@ -41,7 +41,7 @@ http-body-util = "0.1"
 hyperlocal = "0.9"
 urlencoding = "2"
 hyper-http-proxy = "1"
-hyper-rustls = "0.27"
+hyper-rustls = { version = "0.27", features = ["webpki-tokio", "http1", "tls12", "logging", "aws-lc-rs"] }
 
 [dependencies.clash-lib]
 package = "clash-lib"
@@ -54,7 +54,7 @@ features = [
     "shadowsocks",
     "tun",
     "wireguard",
-    "ring"
+    "aws-lc-rs"
 ]
 default-features = false
 

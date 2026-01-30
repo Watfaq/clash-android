@@ -317,6 +317,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b7b6141e96a8c160799cc2d5adecd5cbbe5054cb8c7c4af53da0f83bb7ad256"
 dependencies = [
  "aws-lc-sys",
+ "untrusted 0.7.1",
  "zeroize",
 ]
 
@@ -543,15 +544,14 @@ version = "0.1.0"
 source = "git+https://github.com/Watfaq/boring-noise.git?rev=e8a17ec#e8a17ecb688ef2fed8d37beda0f87f5561fa45e6"
 dependencies = [
  "aead",
+ "aws-lc-rs",
  "blake2",
  "chacha20poly1305",
- "constant_time_eq",
  "hmac",
  "nix 0.30.1",
  "parking_lot",
  "portable-atomic",
  "rand_core 0.6.4",
- "ring",
  "tracing",
  "x25519-dalek",
 ]
@@ -653,9 +653,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.54"
+version = "1.2.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6354c81bbfd62d9cfa9cb3c773c2b7b2a3a482d569de977fd0e961f6e7c00583"
+checksum = "47b26a0954ae34af09b50f0de26458fa95369a0d478d8236d3f93082b219bd29"
 dependencies = [
  "find-msvc-tools",
  "jobserver",
@@ -812,7 +812,7 @@ dependencies = [
 [[package]]
 name = "clash-lib"
 version = "0.9.4"
-source = "git+https://github.com/Watfaq/clash-rs.git?branch=fix%2Fgroup-latency#8a670e8b8308d06954a294bd585369f42e0a2980"
+source = "git+https://github.com/Watfaq/clash-rs.git?branch=fix%2Fgroup-latency#0df322466bc44940f6b2768c6525827c7c6726d5"
 dependencies = [
  "aead",
  "aes",
@@ -820,6 +820,7 @@ dependencies = [
  "anyhow",
  "async-recursion",
  "async-trait",
+ "aws-lc-rs",
  "axum",
  "base64 0.22.1",
  "blake2",
@@ -1661,9 +1662,9 @@ dependencies = [
 
 [[package]]
 name = "find-msvc-tools"
-version = "0.1.8"
+version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8591b0bcc8a98a64310a2fae1bb3e9b8564dd10e381e6e28010fde8e8e8568db"
+checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
 
 [[package]]
 name = "fixedbitset"
@@ -2186,6 +2187,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8a6fe56c0038198998a6f217ca4e7ef3a5e51f46163bd6dd60b5c71ca6c6502"
 dependencies = [
  "async-trait",
+ "aws-lc-rs",
  "bitflags 2.10.0",
  "bytes",
  "cfg-if",
@@ -2424,6 +2426,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tower-service",
+ "webpki-roots",
 ]
 
 [[package]]
@@ -3969,6 +3972,7 @@ version = "0.11.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1906b49b0c3bc04b5fe5d86a77925ae6524a19b816ae38ce1e426255f1d8a31"
 dependencies = [
+ "aws-lc-rs",
  "bytes",
  "getrandom 0.3.4",
  "lru-slab",
@@ -4193,7 +4197,7 @@ dependencies = [
  "cfg-if",
  "getrandom 0.2.17",
  "libc",
- "untrusted",
+ "untrusted 0.9.0",
  "windows-sys 0.52.0",
 ]
 
@@ -4274,6 +4278,7 @@ checksum = "bdbb7dcdd62c17ac911307ff693f55b3ec6712004d2d66ffdb8c0fa00269fd66"
 dependencies = [
  "aes",
  "async-trait",
+ "aws-lc-rs",
  "bitflags 2.10.0",
  "block-padding",
  "byteorder",
@@ -4310,7 +4315,6 @@ dependencies = [
  "pkcs8 0.10.2",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "ring",
  "russh-cryptovec",
  "russh-util",
  "sec1",
@@ -4474,9 +4478,10 @@ version = "0.102.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "64ca1bc8749bd4cf37b5ce386cc146580777b4e8572c7b97baf22c83f444bee9"
 dependencies = [
+ "aws-lc-rs",
  "ring",
  "rustls-pki-types",
- "untrusted",
+ "untrusted 0.9.0",
 ]
 
 [[package]]
@@ -4488,7 +4493,7 @@ dependencies = [
  "aws-lc-rs",
  "ring",
  "rustls-pki-types",
- "untrusted",
+ "untrusted 0.9.0",
 ]
 
 [[package]]
@@ -5967,6 +5972,12 @@ checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
 
 [[package]]
 name = "untrusted"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
+
+[[package]]
+name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
@@ -6129,7 +6140,7 @@ dependencies = [
 [[package]]
 name = "watfaq-dns"
 version = "0.9.4"
-source = "git+https://github.com/Watfaq/clash-rs.git?branch=fix%2Fgroup-latency#8a670e8b8308d06954a294bd585369f42e0a2980"
+source = "git+https://github.com/Watfaq/clash-rs.git?branch=fix%2Fgroup-latency#0df322466bc44940f6b2768c6525827c7c6726d5"
 dependencies = [
  "async-trait",
  "futures",
@@ -6148,7 +6159,7 @@ dependencies = [
 [[package]]
 name = "watfaq-netstack"
 version = "0.1.0"
-source = "git+https://github.com/Watfaq/clash-rs.git?branch=fix%2Fgroup-latency#8a670e8b8308d06954a294bd585369f42e0a2980"
+source = "git+https://github.com/Watfaq/clash-rs.git?branch=fix%2Fgroup-latency#0df322466bc44940f6b2768c6525827c7c6726d5"
 dependencies = [
  "bytes",
  "etherparse",
@@ -6164,9 +6175,9 @@ name = "watfaq-rustls"
 version = "0.23.21"
 source = "git+https://github.com/Watfaq/rustls.git?rev=4cae3aa2e84ea29d8a74b495793773bdb0a72206#4cae3aa2e84ea29d8a74b495793773bdb0a72206"
 dependencies = [
+ "aws-lc-rs",
  "log",
  "once_cell",
- "ring",
  "rustls-pki-types",
  "rustls-webpki 0.102.8",
  "subtle",
@@ -6860,18 +6871,18 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.8.35"
+version = "0.8.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdea86ddd5568519879b8187e1cf04e24fce28f7fe046ceecbce472ff19a2572"
+checksum = "dafd85c832c1b68bbb4ec0c72c7f6f4fc5179627d2bc7c26b30e4c0cc11e76cc"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.8.35"
+version = "0.8.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c15e1b46eff7c6c91195752e0eeed8ef040e391cdece7c25376957d5f15df22"
+checksum = "7cb7e4e8436d9db52fbd6625dbf2f45243ab84994a72882ec8227b99e72b439a"
 dependencies = [
  "proc-macro2",
  "quote",
