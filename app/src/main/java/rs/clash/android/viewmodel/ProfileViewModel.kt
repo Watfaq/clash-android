@@ -150,28 +150,27 @@ class ProfileViewModel : ViewModel() {
 			savedFilePath = file.absolutePath
 
 			// Add to profiles list
+			val isFirstProfile = profiles.isEmpty()
 			val newProfile =
 				Profile(
 					name = fileName,
 					filePath = file.absolutePath,
 					fileSize = fileSize,
-					isActive = profiles.isEmpty(), // First profile becomes active
+					isActive = isFirstProfile, // Only first profile becomes active
 				)
 			
-			// If this is the first profile or user wants to activate it, deactivate others
-			if (profiles.isEmpty()) {
-				profiles.add(newProfile)
+			profiles.add(newProfile)
+			
+			// If this is the first profile, set it as active
+			if (isFirstProfile) {
 				activeProfile = newProfile
-			} else {
-				profiles.add(newProfile)
+				// Update SharedPreferences for active profile
+				prefs.edit {
+					putString("profile_path", file.absolutePath)
+				}
 			}
 			
 			saveProfiles()
-
-			// Save to SharedPreferences for backward compatibility
-			prefs.edit {
-				putString("profile_path", file.absolutePath)
-			}
 
 			Toast.makeText(context, "配置文件导入成功", Toast.LENGTH_SHORT).show()
 			file.absolutePath
