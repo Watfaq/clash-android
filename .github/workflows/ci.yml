@@ -45,6 +45,11 @@ jobs:
         with:
           ndk-version: r29
 
+      - name: Fix NDK libgcc issue
+        run: |
+          chmod +x .github/scripts/fix-ndk-libgcc.sh
+          .github/scripts/fix-ndk-libgcc.sh
+
       - name: Add Rust Android targets
         run: |
           rustup target add aarch64-linux-android
