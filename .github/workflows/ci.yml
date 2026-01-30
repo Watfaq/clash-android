@@ -40,15 +40,11 @@ jobs:
           targets: "x86_64-unknown-linux-gnu"
           components: "rustfmt,clippy,rust-src"
 
-      - name: Setup Android SDK and NDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
         with:
-          cmdline-tools-version: 11076708
-          packages: |
-            build-tools;36.0.0
-            platforms;android-36
-            ndk;29.0.14206865
-      
+          ndk-version: r29
+
       - name: Add Rust Android targets
         run: |
           rustup target add aarch64-linux-android

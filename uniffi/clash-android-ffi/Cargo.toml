@@ -45,7 +45,7 @@ hyper-rustls = { version = "0.27", features = ["webpki-tokio", "http1", "tls12",
 
 [dependencies.clash-lib]
 package = "clash-lib"
-branch = "fix/group-latency"
+branch = "android"
 git = "https://github.com/Watfaq/clash-rs.git"
 #path = "../../../clash-rs/clash-lib"
 features = [
