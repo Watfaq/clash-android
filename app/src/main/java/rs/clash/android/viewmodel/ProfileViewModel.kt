@@ -4,7 +4,6 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -14,23 +13,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import rs.clash.android.ui.snackbar.SnackbarController
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import rs.clash.android.Global
 import rs.clash.android.model.Profile
 import rs.clash.android.model.ProfileType
-import uniffi.clash_android_ffi.EyreException
-import uniffi.clash_android_ffi.DownloadProgressCallback
 import uniffi.clash_android_ffi.DownloadProgress
+import uniffi.clash_android_ffi.DownloadProgressCallback
+import uniffi.clash_android_ffi.EyreException
 import uniffi.clash_android_ffi.downloadFileWithProgress
 import uniffi.clash_android_ffi.formatEyreError
 import uniffi.clash_android_ffi.verifyConfig
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
-import java.util.Locale
-import kotlin.math.log10
-import kotlin.math.pow
 
 data class FileInfo(
 	val name: String,
@@ -38,29 +35,10 @@ data class FileInfo(
 	val size: Long = 0,
 )
 
-data class ErrorInfo(
-	val message: String,
-	val fullMessage: String,
-	val timestamp: Long = System.currentTimeMillis()
-)
-
 class ProfileViewModel : ViewModel() {
 	private val prefs = Global.application.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
 	var selectedFile by mutableStateOf<FileInfo?>(null)
 		private set
-
-	// Error state for UI display
-	var errorInfo by mutableStateOf<ErrorInfo?>(null)
-		private set
-
-	fun clearError() {
-		errorInfo = null
-	}
-
-	private fun setError(shortMessage: String, fullMessage: String) {
-		errorInfo = ErrorInfo(shortMessage, fullMessage)
-		Log.e("ProfileViewModel", fullMessage)
-	}
 
 	var isImporting by mutableStateOf(false)
 		private set
@@ -196,15 +174,20 @@ class ProfileViewModel : ViewModel() {
 				prefs.edit {
 					putString("profile_path", file.absolutePath)
 				}
+				// Immediately update Global.profilePath
+				Global.profilePath = file.absolutePath
 			}
 			
 			saveProfiles()
 
-			Toast.makeText(context, "配置文件导入成功", Toast.LENGTH_SHORT).show()
+			SnackbarController.showMessage("配置文件导入成功")
 			file.absolutePath
+		}  catch (e: EyreException) {
+			SnackbarController.showMessage("导入配置失败: ${formatEyreError(e)}")
+			null
 		} catch (e: Exception) {
 			val errorMessage = e.message ?: e.toString()
-			setError("导入配置失败", "导入配置失败: $errorMessage")
+			SnackbarController.showMessage("导入配置失败: $errorMessage")
 			null
 		} finally {
 			isImporting = false
@@ -231,9 +214,11 @@ class ProfileViewModel : ViewModel() {
 			prefs.edit {
 				putString("profile_path", profiles[index].filePath)
 			}
+			// Immediately update Global.profilePath
+			Global.profilePath = profiles[index].filePath
 			
 			saveProfiles()
-			Toast.makeText(context, "已切换到配置: ${profile.name}", Toast.LENGTH_SHORT).show()
+			SnackbarController.showMessage("已切换到配置: ${profile.name}")
 		}
 	}
 
@@ -257,10 +242,12 @@ class ProfileViewModel : ViewModel() {
 			prefs.edit {
 				remove("profile_path")
 			}
+			// Immediately clear Global.profilePath
+			Global.profilePath = ""
 		}
 		
 		saveProfiles()
-		Toast.makeText(context, "配置已删除: ${profile.name}", Toast.LENGTH_SHORT).show()
+		SnackbarController.showMessage("配置已删除: ${profile.name}")
 	}
 
 	fun renameProfile(
@@ -275,10 +262,9 @@ class ProfileViewModel : ViewModel() {
 				activeProfile = profiles[index]
 			}
 			saveProfiles()
-			Toast.makeText(context, "配置已重命名", Toast.LENGTH_SHORT).show()
+			SnackbarController.showMessage("配置已重命名")
 		}
 	}
-
 
 	fun verify(path: String): Pair<Boolean, String> =
 		try {
@@ -340,20 +326,22 @@ class ProfileViewModel : ViewModel() {
 				val file = File(context.filesDir, fileName)
 				
 				// Auto-detect proxy if VPN is running and user didn't specify one
-				val effectiveProxyUrl = proxyUrl ?: Global.proxyPort?.let { port ->
-					"http://127.0.0.1:$port"
-				}
+				val effectiveProxyUrl =
+					proxyUrl ?: Global.proxyPort?.let { port ->
+						"http://127.0.0.1:$port"
+					}
 				
 				// Progress callback - update on main thread
-				val progressCallback = object : DownloadProgressCallback {
-					override fun onProgress(progress: DownloadProgress) {
-						Log.d("ProfileViewModel", "Download progress: ${progress.downloaded}/${progress.total}")
-						viewModelScope.launch(Dispatchers.Main) {
-							downloadProgress = progress
-							Log.d("ProfileViewModel", "Progress updated on main thread")
+				val progressCallback =
+					object : DownloadProgressCallback {
+						override fun onProgress(progress: DownloadProgress) {
+							Log.d("ProfileViewModel", "Download progress: ${progress.downloaded}/${progress.total}")
+							viewModelScope.launch(Dispatchers.Main) {
+								downloadProgress = progress
+								Log.d("ProfileViewModel", "Progress updated on main thread")
+							}
 						}
 					}
-				}
 				
 				// Download config from URL using Rust FFI
 				withContext(Dispatchers.IO) {
@@ -367,10 +355,8 @@ class ProfileViewModel : ViewModel() {
 						)
 					
 					if (!result.success) {
-						val errorMsg = result.errorMessage ?: "未知错误"
-						withContext(Dispatchers.Main) {
-							setError("下载配置失败", "下载配置失败: $errorMsg")
-						}
+						SnackbarController.showMessage(result.errorMessage ?: "未知错误")
+
 						return@withContext
 					}
 					
@@ -378,9 +364,7 @@ class ProfileViewModel : ViewModel() {
 					val (isValid, _) = verify(file.absolutePath)
 					if (!isValid) {
 						file.delete()
-						withContext(Dispatchers.Main) {
-							setError("配置文件验证失败", "配置文件验证失败，已删除")
-						}
+						SnackbarController.showMessage("配置文件验证失败，已删除")
 						return@withContext
 					}
 					
@@ -401,20 +385,26 @@ class ProfileViewModel : ViewModel() {
 								proxyUrl = proxyUrl,
 							)
 						profiles.add(newProfile)
+						
+						// If this is the first profile, set it as active
+						if (isFirstProfile) {
+							activeProfile = newProfile
+							// Update SharedPreferences for active profile
+							prefs.edit {
+								putString("profile_path", file.absolutePath)
+							}
+							// Immediately update Global.profilePath
+							Global.profilePath = file.absolutePath
+						}
+						
 						saveProfiles()
-						Toast.makeText(context, "远程配置添加成功", Toast.LENGTH_SHORT).show()
+						SnackbarController.showMessage("远程配置添加成功")
 					}
 				}
-			} catch (e: EyreException){
-				val errorMessage = formatEyreError(e)
-				withContext(Dispatchers.Main) {
-					setError("添加远程配置失败", "添加远程配置失败: $errorMessage")
-				}
+			} catch (e: EyreException) {
+				SnackbarController.showMessage("添加远程配置失败: ${formatEyreError(e)}")
 			} catch (e: Exception) {
-				val errorMessage = e.message ?: e.toString()
-				withContext(Dispatchers.Main) {
-					setError("添加远程配置失败", "添加远程配置失败: $errorMessage")
-				}
+				SnackbarController.showMessage("添加远程配置失败: ${e.message ?: e.toString()}")
 			} finally {
 				isDownloading = false
 				downloadProgress = null
@@ -429,7 +419,7 @@ class ProfileViewModel : ViewModel() {
 		proxyUrl: String? = null,
 	) {
 		if (profile.type != ProfileType.REMOTE || profile.url == null) {
-			Toast.makeText(context, "只能更新远程配置", Toast.LENGTH_SHORT).show()
+			SnackbarController.showMessage("只能更新远程配置")
 			return
 		}
 		
@@ -444,13 +434,14 @@ class ProfileViewModel : ViewModel() {
 					val effectiveProxyUrl = proxyUrl ?: profile.proxyUrl
 					
 					// Progress callback - update on main thread
-					val progressCallback = object : DownloadProgressCallback {
-						override fun onProgress(progress: DownloadProgress) {
-							viewModelScope.launch(Dispatchers.Main) {
-								downloadProgress = progress
+					val progressCallback =
+						object : DownloadProgressCallback {
+							override fun onProgress(progress: DownloadProgress) {
+								viewModelScope.launch(Dispatchers.Main) {
+									downloadProgress = progress
+								}
 							}
 						}
-					}
 					
 					val result =
 						downloadFileWithProgress(
@@ -462,19 +453,14 @@ class ProfileViewModel : ViewModel() {
 						)
 					
 					if (!result.success) {
-						val errorMsg = result.errorMessage ?: "未知错误"
-						withContext(Dispatchers.Main) {
-							setError("更新配置失败", "更新配置失败: $errorMsg")
-						}
+						SnackbarController.showMessage("更新配置失败: ${result.errorMessage ?: "未知错误"}")
 						return@withContext
 					}
 					
 					// Verify the downloaded config
-					val (isValid, _) = verify(file.absolutePath)
+					val (isValid, error) = verify(file.absolutePath)
 					if (!isValid) {
-						withContext(Dispatchers.Main) {
-							setError("配置文件验证失败", "配置文件验证失败")
-						}
+						SnackbarController.showMessage("配置文件验证失败: $error")
 						return@withContext
 					}
 					
@@ -493,14 +479,13 @@ class ProfileViewModel : ViewModel() {
 							saveProfiles()
 						}
 						
-						Toast.makeText(context, "配置更新成功", Toast.LENGTH_SHORT).show()
+						SnackbarController.showMessage("配置更新成功")
 					}
 				}
-			} catch (e: Exception) {
-				val errorMessage = e.message ?: e.toString()
-				withContext(Dispatchers.Main) {
-					setError("更新配置失败", "更新配置失败: $errorMessage")
-				}
+			} catch (e: EyreException) {
+			SnackbarController.showMessage("添加远程配置失败: ${formatEyreError(e)}")
+		} catch (e: Exception) {
+			SnackbarController.showMessage("更新配置失败: ${e.message ?: e.toString()}")
 			} finally {
 				isDownloading = false
 				downloadProgress = null

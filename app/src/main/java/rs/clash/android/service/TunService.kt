@@ -126,15 +126,16 @@ class TunService : VpnService() {
 				}
 		}
 
-		val finalProfile = runClash(
-			Global.profilePath,
-			Global.application.cacheDir.toString(),
-			ProfileOverride(
-				tunFd!!,
-				fakeIp = prefs.getBoolean("fake_ip", false),
-				ipv6 = prefs.getBoolean("ipv6", true),
-			),
-		)
+		val finalProfile =
+			runClash(
+				Global.profilePath,
+				Global.application.cacheDir.toString(),
+				ProfileOverride(
+					tunFd!!,
+					fakeIp = prefs.getBoolean("fake_ip", false),
+					ipv6 = prefs.getBoolean("ipv6", true),
+				),
+			)
 		Global.proxyPort = finalProfile.mixedPort
 	}
 

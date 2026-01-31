@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.VpnService
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.getValue
@@ -25,9 +24,12 @@ import kotlinx.coroutines.launch
 import rs.clash.android.Global
 import rs.clash.android.service.TunService
 import rs.clash.android.service.tunService
+import rs.clash.android.ui.snackbar.SnackbarController.Companion.showMessage
 import uniffi.clash_android_ffi.ClashController
+import uniffi.clash_android_ffi.EyreException
 import uniffi.clash_android_ffi.MemoryResponse
 import uniffi.clash_android_ffi.Proxy
+import uniffi.clash_android_ffi.formatEyreError
 import uniffi.clash_android_ffi.shutdown
 
 class HomeViewModel : ViewModel() {
@@ -40,9 +42,6 @@ class HomeViewModel : ViewModel() {
 
 	private val controller by lazy { ClashController("${Global.application.cacheDir}/clash.sock") }
 	var isRefreshing by mutableStateOf(false)
-		private set
-
-	var errorMessage by mutableStateOf<String?>(null)
 		private set
 
 	val delays = mutableStateMapOf<String, String>()
@@ -85,7 +84,6 @@ class HomeViewModel : ViewModel() {
 				} else {
 					proxies = emptyArray()
 					delays.clear()
-					errorMessage = null
 					memoryUsage = null
 					connectionCount = 0
 					totalDownload = 0
@@ -118,8 +116,8 @@ class HomeViewModel : ViewModel() {
 			connectionCount = connResponse.connections.size
 			totalDownload = connResponse.downloadTotal
 			totalUpload = connResponse.uploadTotal
-		} catch (e: Exception) {
-			Log.e("ClashAPI", "Failed to fetch stats", e)
+		} catch (e: EyreException) {
+			showMessage("Failed to fetch stats ${formatEyreError(e)}" )
 		}
 	}
 
@@ -127,7 +125,6 @@ class HomeViewModel : ViewModel() {
 		if (!isVpnRunning) return
 
 		isRefreshing = true
-		errorMessage = null
 		viewModelScope.launch {
 			try {
 				val proxies = controller.getProxies()
@@ -139,9 +136,8 @@ class HomeViewModel : ViewModel() {
 					}
 				}
 				this@HomeViewModel.proxies = proxies.toTypedArray()
-			} catch (e: Exception) {
-				Log.e("ClashAPI", "Failed to fetch proxies", e)
-				errorMessage = "API Error: ${e.message}"
+			} catch (e: EyreException) {
+				showMessage("API Error: ${formatEyreError(e)}")
 			} finally {
 				isRefreshing = false
 			}
@@ -177,8 +173,8 @@ class HomeViewModel : ViewModel() {
 			try {
 				controller.selectProxy(groupName, proxyName)
 				fetchProxies()
-			} catch (e: Exception) {
-				Log.e("ClashAPI", "Failed to select proxy", e)
+			} catch (e: EyreException) {
+				showMessage("Failed to select proxy ${e.message}")
 			}
 		}
 	}
@@ -186,7 +182,7 @@ class HomeViewModel : ViewModel() {
 	fun startVpn(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>? = null) {
 		val app = Global.application
 		if (Global.profilePath.isEmpty()) {
-			Toast.makeText(app, "Please select a config file first", Toast.LENGTH_SHORT).show()
+			showMessage("Please select a config file first")
 			return
 		}
 		val intent = VpnService.prepare(app)

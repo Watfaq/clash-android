@@ -97,13 +97,11 @@ fun PanelScreen(
 	) { padding ->
 		val proxies by remember { derivedStateOf { viewModel.proxies } }
 		val isRefreshing by remember { derivedStateOf { viewModel.isRefreshing } }
-		val errorMessage by remember { derivedStateOf { viewModel.errorMessage } }
 		val delays = viewModel.delays
 
 		ProxyTab(
 			proxies = proxies,
 			isRefreshing = isRefreshing,
-			errorMessage = errorMessage,
 			delays = delays,
 			onFetchProxies = { viewModel.fetchProxies() },
 			onSelectProxy = { groupName, proxyName -> viewModel.selectProxy(groupName, proxyName) },
@@ -117,7 +115,6 @@ fun PanelScreen(
 private fun ProxyTab(
 	proxies: Array<Proxy>,
 	isRefreshing: Boolean,
-	errorMessage: String?,
 	delays: Map<String, String>,
 	onFetchProxies: () -> Unit,
 	onSelectProxy: (String, String) -> Unit,
@@ -134,26 +131,6 @@ private fun ProxyTab(
 
 	Box(modifier = modifier.fillMaxSize()) {
 		when {
-			errorMessage != null -> {
-				Column(
-					modifier =
-						Modifier
-							.fillMaxSize()
-							.padding(16.dp),
-					horizontalAlignment = Alignment.CenterHorizontally,
-					verticalArrangement = Arrangement.Center,
-				) {
-					Text(
-						text = errorMessage,
-						color = MaterialTheme.colorScheme.error,
-						style = MaterialTheme.typography.bodyMedium,
-					)
-					Spacer(modifier = Modifier.height(8.dp))
-					Button(onClick = onFetchProxies) {
-						Text(stringResource(R.string.retry))
-					}
-				}
-			}
 			proxies.isEmpty() && !isRefreshing -> {
 				Box(
 					modifier = Modifier.fillMaxSize(),
