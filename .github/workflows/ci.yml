@@ -196,10 +196,8 @@ jobs:
             
             if [ -z "$PREVIOUS_TAG" ]; then
               # No previous tag found, use all commits up to current tag
-              echo "range=${CURRENT_TAG}" >> $GITHUB_OUTPUT
               echo "args=${CURRENT_TAG}" >> $GITHUB_OUTPUT
             else
-              echo "range=${PREVIOUS_TAG}..${CURRENT_TAG}" >> $GITHUB_OUTPUT
               echo "args=${PREVIOUS_TAG}..${CURRENT_TAG}" >> $GITHUB_OUTPUT
             fi
           else
@@ -208,10 +206,8 @@ jobs:
             
             if [ -z "$LATEST_TAG" ]; then
               # No v* tag found, use all commits up to HEAD
-              echo "range=HEAD" >> $GITHUB_OUTPUT
               echo "args=HEAD" >> $GITHUB_OUTPUT
             else
-              echo "range=${LATEST_TAG}..HEAD" >> $GITHUB_OUTPUT
               echo "args=${LATEST_TAG}..HEAD" >> $GITHUB_OUTPUT
             fi
           fi
