@@ -35,14 +35,6 @@ body = """
     {%- endif %}
 {%- endfor -%}
 
-{% if version %}
-    {% if previous.version %}
-      **Full Changelog**: {{ self::remote_url() }}/compare/{{ previous.version }}...{{ version }}
-    {% endif %}
-{% else -%}
-  {% raw %}\n{% endraw %}
-{% endif %}
-
 {%- macro remote_url() -%}
   https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}
 {%- endmacro -%}
@@ -70,22 +62,24 @@ split_commits = false
 commit_preprocessors = []
 # regex for parsing and grouping commits
 commit_parsers = [
-  { message = "^feat", group = "<!-- 0 -->🚀 Features" },
-  { message = "^fix", group = "<!-- 1 -->🐛 Bug Fixes" },
-  { message = "^doc", group = "<!-- 3 -->📚 Documentation" },
-  { message = "^perf", group = "<!-- 4 -->⚡ Performance" },
-  { message = "^refactor", group = "<!-- 2 -->🚜 Refactor" },
-  { message = "^style", group = "<!-- 5 -->🎨 Styling" },
-  { message = "^test", group = "<!-- 6 -->🧪 Testing" },
-  { message = "^build", group = "<!-- 7 -->🛠️ Builds" },
+  { message = "^feat", group = "<!-- 0 -->🚀 特性" },
+  { message = "^fix", group = "<!-- 1 -->🐛 修复" },
+  { message = "^doc", group = "<!-- 3 -->📚 文档" },
+  { message = "^perf", group = "<!-- 4 -->⚡ 性能" },
+  { message = "^refactor", group = "<!-- 2 -->🚜 重构" },
+  { message = "^style", group = "<!-- 5 -->🎨 风格" },
+  { message = "^test", group = "<!-- 6 -->🧪 测试" },
+  { message = "^build", group = "<!-- 7 -->🛠️ 构建" },
+  { message = "^ui", group = "<!-- 8 -->💄 界面" },
   { message = "^chore\\(release\\): prepare for", skip = true },
+  { message = "^chore\\(release\\): 发布", skip = true },
   { message = "^chore\\(deps.*\\)", skip = true },
   { message = "^chore\\(pr\\)", skip = true },
   { message = "^chore\\(pull\\)", skip = true },
-  { message = "^chore|^ci", group = "<!-- 8 -->⚙️ Miscellaneous Tasks" },
-  { body = ".*security", group = "<!-- 9 -->🛡️ Security" },
-  { message = "^revert", group = "<!-- 10 -->◀️ Revert" },
-  { message = ".*", group = "Other" },
+  { message = "^chore|^ci", group = "<!-- 8 -->⚙️ 杂项" },
+  { body = ".*security", group = "<!-- 9 -->🛡️ 安全" },
+  { message = "^revert", group = "<!-- 10 -->◀️ 回撤" },
+  { message = ".*", group = "其他" },
 ]
 # filter out the commits that are not matched by commit parsers
 filter_commits = false
