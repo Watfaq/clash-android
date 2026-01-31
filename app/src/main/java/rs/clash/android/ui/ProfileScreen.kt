@@ -40,6 +40,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
@@ -70,7 +71,11 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.R
 import rs.clash.android.model.Profile
 import rs.clash.android.model.ProfileType
+import rs.clash.android.ui.components.ActiveProfileCard
+import rs.clash.android.ui.components.ProfileCard
 import rs.clash.android.ui.components.TextInfoDialog
+import rs.clash.android.ui.components.VerificationResultCard
+import rs.clash.android.ui.components.formatFileSize
 import rs.clash.android.viewmodel.ProfileViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -95,10 +100,27 @@ fun ProfileScreen(
 	val remoteAutoUpdate = remember { mutableStateOf(false) }
 	val remoteUserAgent = remember { mutableStateOf("") }
 	val remoteProxyUrl = remember { mutableStateOf("") }
+	val wasDownloading = remember { mutableStateOf(false) }
 
 	var showInfoDialog by remember { mutableStateOf(false) }
 	var showErrorDetailsDialog by remember { mutableStateOf(false) }
 	val snackbarHostState = remember { SnackbarHostState() }
+	
+	// Auto-close remote dialog when download completes
+	LaunchedEffect(vm.isDownloading) {
+		if (wasDownloading.value && !vm.isDownloading && showRemoteDialog.value && vm.errorInfo == null) {
+			// Download completed successfully, close dialog and reset fields
+			showRemoteDialog.value = false
+			remoteName.value = ""
+			remoteUrl.value = ""
+			remoteAutoUpdate.value = false
+			remoteUserAgent.value = ""
+			remoteProxyUrl.value = ""
+			wasDownloading.value = false
+		} else if (vm.isDownloading) {
+			wasDownloading.value = true
+		}
+	}
 	
 	// Handle error display with Snackbar
 	LaunchedEffect(vm.errorInfo) {
@@ -185,12 +207,14 @@ fun ProfileScreen(
 	if (showRemoteDialog.value) {
 		AlertDialog(
 			onDismissRequest = {
-				showRemoteDialog.value = false
-				remoteName.value = ""
-				remoteUrl.value = ""
-				remoteAutoUpdate.value = false
-				remoteUserAgent.value = ""
-				remoteProxyUrl.value = ""
+				if (!vm.isDownloading) {
+					showRemoteDialog.value = false
+					remoteName.value = ""
+					remoteUrl.value = ""
+					remoteAutoUpdate.value = false
+					remoteUserAgent.value = ""
+					remoteProxyUrl.value = ""
+				}
 			},
 			title = { Text("添加远程配置") },
 			text = {
@@ -198,6 +222,48 @@ fun ProfileScreen(
 					verticalArrangement = Arrangement.spacedBy(8.dp),
 					modifier = Modifier.verticalScroll(rememberScrollState()),
 				) {
+					// Show download progress
+					if (vm.isDownloading) {
+						Text(
+							text = "正在下载配置...",
+							style = MaterialTheme.typography.bodyMedium,
+							fontWeight = FontWeight.Bold,
+							color = MaterialTheme.colorScheme.primary
+						)
+						
+						val progress = vm.downloadProgress
+						if (progress != null && progress.total > 0U) {
+							// Determinate progress
+							val percentage = (progress.downloaded.toFloat() / progress.total.toFloat())
+							LinearProgressIndicator(
+								progress = { percentage },
+								modifier = Modifier.fillMaxWidth(),
+							)
+							Spacer(modifier = Modifier.height(4.dp))
+							Row(
+								modifier = Modifier.fillMaxWidth(),
+								horizontalArrangement = Arrangement.SpaceBetween
+							) {
+								Text(
+									text = "${formatFileSize(progress.downloaded.toLong())} / ${formatFileSize(progress.total.toLong())}",
+									style = MaterialTheme.typography.bodySmall,
+									color = MaterialTheme.colorScheme.onSurfaceVariant
+								)
+								Text(
+									text = "${(percentage * 100).toInt()}%",
+									style = MaterialTheme.typography.bodySmall,
+									color = MaterialTheme.colorScheme.primary
+								)
+							}
+						} else {
+							// Indeterminate progress
+							LinearProgressIndicator(
+								modifier = Modifier.fillMaxWidth(),
+							)
+						}
+						Spacer(modifier = Modifier.height(8.dp))
+					}
+					
 					OutlinedTextField(
 						value = remoteName.value,
 						onValueChange = { remoteName.value = it },
@@ -205,6 +271,7 @@ fun ProfileScreen(
 						placeholder = { Text("我的远程配置") },
 						singleLine = true,
 						modifier = Modifier.fillMaxWidth(),
+						enabled = !vm.isDownloading,
 					)
 					OutlinedTextField(
 						value = remoteUrl.value,
@@ -213,6 +280,7 @@ fun ProfileScreen(
 						placeholder = { Text("https://example.com/config.yaml") },
 						singleLine = true,
 						modifier = Modifier.fillMaxWidth(),
+						enabled = !vm.isDownloading,
 					)
 					OutlinedTextField(
 						value = remoteUserAgent.value,
@@ -221,6 +289,7 @@ fun ProfileScreen(
 						placeholder = { Text("自定义浏览器标识") },
 						singleLine = true,
 						modifier = Modifier.fillMaxWidth(),
+						enabled = !vm.isDownloading,
 					)
 					OutlinedTextField(
 						value = remoteProxyUrl.value,
@@ -229,11 +298,12 @@ fun ProfileScreen(
 						placeholder = { Text("http://proxy.example.com:8080") },
 						singleLine = true,
 						modifier = Modifier.fillMaxWidth(),
+						enabled = !vm.isDownloading,
 					)
 					Row(
 						verticalAlignment = Alignment.CenterVertically,
 						modifier =
-							Modifier.clickable {
+							Modifier.clickable(enabled = !vm.isDownloading) {
 								remoteAutoUpdate.value = !remoteAutoUpdate.value
 							},
 					) {
@@ -258,12 +328,7 @@ fun ProfileScreen(
 								remoteUserAgent.value.takeIf { it.isNotBlank() },
 								remoteProxyUrl.value.takeIf { it.isNotBlank() },
 							)
-							showRemoteDialog.value = false
-							remoteName.value = ""
-							remoteUrl.value = ""
-							remoteAutoUpdate.value = false
-							remoteUserAgent.value = ""
-							remoteProxyUrl.value = ""
+							// Don't close dialog immediately - let download complete first
 						}
 					},
 					enabled = remoteName.value.isNotBlank() && remoteUrl.value.isNotBlank() && !vm.isDownloading,
@@ -481,346 +546,6 @@ fun ProfileScreen(
 					Spacer(modifier = Modifier.width(8.dp))
 					Text("远程配置")
 				}
-			}
-		}
-	}
-}
-
-@Composable
-fun ActiveProfileCard(
-	profile: Profile,
-	onVerify: () -> Unit,
-	isVerifying: Boolean,
-	modifier: Modifier = Modifier,
-) {
-	ElevatedCard(
-		modifier = modifier,
-		colors =
-			CardDefaults.elevatedCardColors(
-				containerColor = MaterialTheme.colorScheme.primaryContainer,
-			),
-	) {
-		Column(modifier = Modifier.padding(16.dp)) {
-			Row(
-				verticalAlignment = Alignment.CenterVertically,
-			) {
-				Icon(
-					Icons.Default.CheckCircle,
-					contentDescription = null,
-					tint = MaterialTheme.colorScheme.primary,
-					modifier = Modifier.size(40.dp),
-				)
-				Spacer(modifier = Modifier.width(16.dp))
-				Column(modifier = Modifier.weight(1f)) {
-					Text(
-						text = "当前活动配置",
-						style = MaterialTheme.typography.labelMedium,
-						color = MaterialTheme.colorScheme.primary,
-					)
-					Spacer(modifier = Modifier.height(4.dp))
-					Text(
-						text = profile.name,
-						style = MaterialTheme.typography.titleMedium,
-						fontWeight = FontWeight.Bold,
-					)
-					Spacer(modifier = Modifier.height(2.dp))
-					Text(
-						text = formatFileSize(profile.fileSize),
-						style = MaterialTheme.typography.bodySmall,
-						color = MaterialTheme.colorScheme.onSurfaceVariant,
-					)
-				}
-			}
-			
-			Spacer(modifier = Modifier.height(12.dp))
-			
-			FilledTonalButton(
-				onClick = onVerify,
-				modifier = Modifier.fillMaxWidth(),
-				enabled = !isVerifying,
-			) {
-				if (isVerifying) {
-					CircularProgressIndicator(
-						modifier = Modifier.size(16.dp),
-						color = MaterialTheme.colorScheme.onSecondaryContainer,
-						strokeWidth = 2.dp,
-					)
-					Spacer(modifier = Modifier.width(8.dp))
-					Text("验证中...")
-				} else {
-					Icon(
-						Icons.Default.VerifiedUser,
-						contentDescription = null,
-						modifier = Modifier.size(16.dp),
-					)
-					Spacer(modifier = Modifier.width(8.dp))
-					Text("验证配置")
-				}
-			}
-		}
-	}
-}
-
-@Composable
-fun ProfileCard(
-	profile: Profile,
-	onActivate: () -> Unit,
-	onDelete: () -> Unit,
-	onRename: (String) -> Unit,
-	onUpdate: (() -> Unit)? = null,
-	modifier: Modifier = Modifier,
-) {
-	val showMenu = remember { mutableStateOf(false) }
-	val showRenameDialog = remember { mutableStateOf(false) }
-	val newName = remember { mutableStateOf(profile.name) }
-	val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
-	
-	if (showRenameDialog.value) {
-		AlertDialog(
-			onDismissRequest = {
-				showRenameDialog.value = false
-				newName.value = profile.name
-			},
-			title = { Text("重命名配置") },
-			text = {
-				OutlinedTextField(
-					value = newName.value,
-					onValueChange = { newName.value = it },
-					label = { Text("配置名称") },
-					singleLine = true,
-				)
-			},
-			confirmButton = {
-				TextButton(
-					onClick = {
-						if (newName.value.isNotBlank()) {
-							onRename(newName.value)
-							showRenameDialog.value = false
-						}
-					},
-				) {
-					Text("确定")
-				}
-			},
-			dismissButton = {
-				TextButton(
-					onClick = {
-						showRenameDialog.value = false
-						newName.value = profile.name
-					},
-				) {
-					Text("取消")
-				}
-			},
-		)
-	}
-	
-	OutlinedCard(
-		modifier = modifier.clickable(enabled = !profile.isActive) { onActivate() },
-	) {
-		Row(
-			modifier = Modifier.padding(16.dp),
-			verticalAlignment = Alignment.CenterVertically,
-		) {
-			Icon(
-				if (profile.isActive) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
-				contentDescription = if (profile.isActive) "Active" else "Inactive",
-				tint = if (profile.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-				modifier = Modifier.size(24.dp),
-			)
-			Spacer(modifier = Modifier.width(16.dp))
-			Column(modifier = Modifier.weight(1f)) {
-				Row(verticalAlignment = Alignment.CenterVertically) {
-					Text(
-						text = profile.name,
-						style = MaterialTheme.typography.bodyLarge,
-						fontWeight = if (profile.isActive) FontWeight.Bold else FontWeight.Normal,
-					)
-					if (profile.type == rs.clash.android.model.ProfileType.REMOTE) {
-						Spacer(modifier = Modifier.width(4.dp))
-						Icon(
-							Icons.Default.Refresh,
-							contentDescription = "Remote",
-							tint = MaterialTheme.colorScheme.primary,
-							modifier = Modifier.size(16.dp),
-						)
-					}
-				}
-				Spacer(modifier = Modifier.height(2.dp))
-				Text(
-					text = formatFileSize(profile.fileSize),
-					style = MaterialTheme.typography.bodySmall,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-				)
-				Text(
-					text = dateFormat.format(Date(profile.createdAt)),
-					style = MaterialTheme.typography.bodySmall,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-				)
-				if (profile.type == rs.clash.android.model.ProfileType.REMOTE && profile.lastUpdated != null) {
-					Text(
-						text = "更新: ${dateFormat.format(Date(profile.lastUpdated))}",
-						style = MaterialTheme.typography.bodySmall,
-						color = MaterialTheme.colorScheme.primary,
-					)
-				}
-			}
-			
-			Box {
-				IconButton(onClick = { showMenu.value = true }) {
-					Icon(
-						Icons.Default.MoreVert,
-						contentDescription = "More options",
-					)
-				}
-				
-				DropdownMenu(
-					expanded = showMenu.value,
-					onDismissRequest = { showMenu.value = false },
-				) {
-					if (!profile.isActive) {
-						DropdownMenuItem(
-							text = { Text("设为活动配置") },
-							onClick = {
-								onActivate()
-								showMenu.value = false
-							},
-							leadingIcon = {
-								Icon(Icons.Default.CheckCircle, contentDescription = null)
-							},
-						)
-					}
-					if (profile.type == rs.clash.android.model.ProfileType.REMOTE && onUpdate != null) {
-						DropdownMenuItem(
-							text = { Text("更新配置") },
-							onClick = {
-								onUpdate()
-								showMenu.value = false
-							},
-							leadingIcon = {
-								Icon(Icons.Default.Refresh, contentDescription = null)
-							},
-						)
-					}
-					DropdownMenuItem(
-						text = { Text("重命名") },
-						onClick = {
-							showRenameDialog.value = true
-							showMenu.value = false
-						},
-						leadingIcon = {
-							Icon(Icons.Default.Edit, contentDescription = null)
-						},
-					)
-					DropdownMenuItem(
-						text = { Text("删除") },
-						onClick = {
-							onDelete()
-							showMenu.value = false
-						},
-						leadingIcon = {
-							Icon(
-								Icons.Default.Delete,
-								contentDescription = null,
-								tint = MaterialTheme.colorScheme.error,
-							)
-						},
-					)
-				}
-			}
-		}
-	}
-}
-
-fun formatFileSize(size: Long): String {
-	if (size <= 0) return "0 B"
-	val units = arrayOf("B", "KB", "MB", "GB")
-	val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt().coerceIn(0, units.size - 1)
-	return String.format(Locale.US, "%.1f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
-}
-
-@Composable
-fun VerificationResultCard(
-	result: String,
-	onDismiss: () -> Unit,
-	modifier: Modifier = Modifier,
-) {
-	val isValid = result.contains("合法") || result.contains("valid")
-	val scrollState = rememberScrollState()
-	
-	ElevatedCard(
-		modifier = modifier,
-		colors =
-			CardDefaults.elevatedCardColors(
-				containerColor =
-					if (isValid) {
-						MaterialTheme.colorScheme.tertiaryContainer
-					} else {
-						MaterialTheme.colorScheme.errorContainer
-					},
-			),
-	) {
-		Row(
-			modifier = Modifier.padding(16.dp),
-			verticalAlignment = Alignment.Top,
-		) {
-			Icon(
-				if (isValid) Icons.Default.CheckCircle else Icons.Default.Error,
-				contentDescription = null,
-				tint =
-					if (isValid) {
-						MaterialTheme.colorScheme.tertiary
-					} else {
-						MaterialTheme.colorScheme.error
-					},
-				modifier = Modifier.size(24.dp),
-			)
-			Spacer(modifier = Modifier.width(12.dp))
-			Column(
-				modifier =
-					Modifier
-						.weight(1f)
-						.height(300.dp)
-						.verticalScroll(scrollState),
-			) {
-				Text(
-					text = stringResource(R.string.validation_result),
-					style = MaterialTheme.typography.labelMedium,
-					color =
-						if (isValid) {
-							MaterialTheme.colorScheme.onTertiaryContainer
-						} else {
-							MaterialTheme.colorScheme.onErrorContainer
-						},
-				)
-				Spacer(modifier = Modifier.height(4.dp))
-				Text(
-					text = result,
-					style = MaterialTheme.typography.bodySmall,
-					color =
-						if (isValid) {
-							MaterialTheme.colorScheme.onTertiaryContainer
-						} else {
-							MaterialTheme.colorScheme.onErrorContainer
-						},
-					fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-				)
-			}
-			IconButton(
-				onClick = onDismiss,
-				modifier = Modifier.size(24.dp),
-			) {
-				Icon(
-					Icons.Default.Close,
-					contentDescription = "Close",
-					tint =
-						if (isValid) {
-							MaterialTheme.colorScheme.onTertiaryContainer
-						} else {
-							MaterialTheme.colorScheme.onErrorContainer
-						},
-					modifier = Modifier.size(20.dp),
-				)
 			}
 		}
 	}

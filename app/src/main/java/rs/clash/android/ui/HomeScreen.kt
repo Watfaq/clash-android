@@ -49,6 +49,7 @@ import com.ramcosta.composedestinations.generated.destinations.ConnectionsScreen
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.R
 import rs.clash.android.formatSize
+import rs.clash.android.ui.components.StatsCard
 import rs.clash.android.ui.components.TextInfoDialog
 import rs.clash.android.viewmodel.HomeViewModel
 import uniffi.clash_android_ffi.MemoryResponse
@@ -247,56 +248,5 @@ fun OverviewTab(
 		}
 
 		item { Spacer(modifier = Modifier.height(16.dp)) }
-	}
-}
-
-@Composable
-fun StatsCard(
-	title: String,
-	value: String,
-	modifier: Modifier = Modifier,
-	subtitle: String = "",
-	containerColor: Color? = null,
-	onClick: (() -> Unit)? = null,
-) {
-	Card(
-		modifier =
-			modifier
-				.fillMaxWidth()
-				.semantics {
-					contentDescription = "$title: $value${if (subtitle.isNotEmpty()) ", $subtitle" else ""}"
-				},
-		elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-		colors =
-			if (containerColor != null) {
-				CardDefaults.cardColors(containerColor = containerColor)
-			} else {
-				CardDefaults.cardColors()
-			},
-		onClick = onClick ?: {},
-	) {
-		Column(
-			modifier = Modifier.padding(16.dp),
-			verticalArrangement = Arrangement.spacedBy(4.dp),
-		) {
-			Text(
-				text = title,
-				style = MaterialTheme.typography.labelLarge,
-				color = MaterialTheme.colorScheme.secondary,
-			)
-			Text(
-				text = value,
-				style = MaterialTheme.typography.headlineMedium,
-				fontWeight = FontWeight.Bold,
-				color = MaterialTheme.colorScheme.primary,
-			)
-			if (subtitle.isNotEmpty()) {
-				Text(
-					text = subtitle,
-					style = MaterialTheme.typography.bodySmall,
-					color = MaterialTheme.colorScheme.outline,
-				)
-			}
-		}
 	}
 }

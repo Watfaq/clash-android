@@ -22,8 +22,7 @@ import rs.clash.android.model.ProfileType
 import uniffi.clash_android_ffi.EyreException
 import uniffi.clash_android_ffi.DownloadProgressCallback
 import uniffi.clash_android_ffi.DownloadProgress
-import uniffi.clash_android_ffi.downloadConfig
-import uniffi.clash_android_ffi.downloadConfigWithProgress
+import uniffi.clash_android_ffi.downloadFileWithProgress
 import uniffi.clash_android_ffi.formatEyreError
 import uniffi.clash_android_ffi.verifyConfig
 import java.io.File
@@ -359,7 +358,7 @@ class ProfileViewModel : ViewModel() {
 				// Download config from URL using Rust FFI
 				withContext(Dispatchers.IO) {
 					val result =
-						downloadConfigWithProgress(
+						downloadFileWithProgress(
 							url,
 							file.absolutePath,
 							userAgent,
@@ -454,7 +453,7 @@ class ProfileViewModel : ViewModel() {
 					}
 					
 					val result =
-						downloadConfigWithProgress(
+						downloadFileWithProgress(
 							profile.url,
 							file.absolutePath,
 							effectiveUserAgent,

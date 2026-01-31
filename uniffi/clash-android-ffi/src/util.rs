@@ -1,5 +1,6 @@
 use eyre::Context;
 use tracing::{error, info};
+use tokio_stream::StreamExt;
 
 use crate::EyreError;
 
@@ -10,12 +11,34 @@ pub struct DownloadResult {
     pub error_message: Option<String>,
 }
 
+#[derive(uniffi::Record)]
+pub struct DownloadProgress {
+    pub downloaded: u64,
+    pub total: u64,
+}
+
+#[uniffi::export(callback_interface)]
+pub trait DownloadProgressCallback: Send + Sync {
+    fn on_progress(&self, progress: DownloadProgress);
+}
+
 #[uniffi::export(async_runtime = "tokio")]
-pub async fn download_config(
+pub async fn download_file(
     url: String,
     output_path: String,
     user_agent: Option<String>,
     proxy_url: Option<String>,
+) -> Result<DownloadResult, EyreError> {
+    download_file_with_progress(url, output_path, user_agent, proxy_url, None).await
+}
+
+#[uniffi::export(async_runtime = "tokio")]
+pub async fn download_file_with_progress(
+    url: String,
+    output_path: String,
+    user_agent: Option<String>,
+    proxy_url: Option<String>,
+    progress_callback: Option<Box<dyn DownloadProgressCallback>>,
 ) -> Result<DownloadResult, EyreError> {
     info!("Starting download from: {}", url);
 
@@ -57,21 +80,48 @@ pub async fn download_config(
         });
     }
 
-    // Download response body
-    let bytes = response
-        .bytes()
-        .await
-        .map_err(|e| eyre::eyre!("Failed to read response body: {}", e))?;
+    // Get content length
+    let total_size = response.content_length().unwrap_or(0);
+    info!("Content length: {} bytes", total_size);
+
+    // Report initial progress
+    if let Some(ref callback) = progress_callback {
+        info!("Reporting initial progress: 0/{}", total_size);
+        callback.on_progress(DownloadProgress {
+            downloaded: 0,
+            total: total_size,
+        });
+    }
+
+    // Download with progress tracking
+    let mut stream = response.bytes_stream();
+    let mut downloaded: u64 = 0;
+    let mut buffer = Vec::new();
+
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| eyre::eyre!("Failed to read chunk: {}", e))?;
+        buffer.extend_from_slice(&chunk);
+        downloaded += chunk.len() as u64;
+
+        // Report progress
+        if let Some(ref callback) = progress_callback {
+            info!("Progress: {}/{} bytes", downloaded, total_size);
+            callback.on_progress(DownloadProgress {
+                downloaded,
+                total: total_size,
+            });
+        }
+    }
 
     // Create output file and write
     _ = tokio::fs::File::create(&output_path)
         .await
         .context(format!("Failed to create file: {output_path}"))?;
-    tokio::fs::write(&output_path, &bytes)
+    tokio::fs::write(&output_path, &buffer)
         .await
         .context(format!("Failed to write to file: {output_path}"))?;
 
-    let file_size = bytes.len() as u64;
+    let file_size = buffer.len() as u64;
     info!(
         "Download completed: {} bytes written to {}",
         file_size, output_path
@@ -83,3 +133,4 @@ pub async fn download_config(
         error_message: None,
     })
 }
+
