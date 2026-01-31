@@ -191,8 +191,8 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             # For release: use previous v tag to current v tag
             CURRENT_TAG="${GITHUB_REF#refs/tags/}"
-            # Get the previous v* tag (use -x for exact line matching)
-            PREVIOUS_TAG=$(git tag -l "v*" --sort=-version:refname | grep -v -x "${CURRENT_TAG}" | head -n 1)
+            # Get the previous v* tag (use -F -x for fixed string exact matching)
+            PREVIOUS_TAG=$(git tag -l "v*" --sort=-version:refname | grep -F -x -v "${CURRENT_TAG}" | head -n 1)
             
             if [ -z "$PREVIOUS_TAG" ]; then
               # No previous tag found, use all commits up to current tag
@@ -207,9 +207,9 @@ jobs:
             LATEST_TAG=$(git tag -l "v*" --sort=-version:refname | head -n 1)
             
             if [ -z "$LATEST_TAG" ]; then
-              # No v* tag found, use all commits
+              # No v* tag found, use all commits up to HEAD
               echo "range=HEAD" >> $GITHUB_OUTPUT
-              echo "args=" >> $GITHUB_OUTPUT
+              echo "args=HEAD" >> $GITHUB_OUTPUT
             else
               echo "range=${LATEST_TAG}..HEAD" >> $GITHUB_OUTPUT
               echo "args=${LATEST_TAG}..HEAD" >> $GITHUB_OUTPUT
