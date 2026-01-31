@@ -172,9 +172,9 @@ jobs:
           
           # Create draft release with changelog
           if [[ "$TAG_NAME" == v* ]]; then
-            gh release create "$TAG_NAME" --draft --latest
+            gh release create "$TAG_NAME" --draft --latest --title "$TAG_NAME"
           else
-            gh release create "$TAG_NAME" --draft
+            gh release create "$TAG_NAME" --draft --title "测试构建"
           fi
           
           # Upload all package files
