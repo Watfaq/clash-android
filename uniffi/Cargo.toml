@@ -18,7 +18,7 @@ async-compat = "0.2.5"
 opt-level = "z"
 lto = true
 codegen-units = 1
-panic = "abort"
+panic = "unwind"
 strip = true
 
 [profile.dev]

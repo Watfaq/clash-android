@@ -818,6 +818,7 @@ dependencies = [
 [[package]]
 name = "clash-lib"
 version = "0.9.4"
+source = "git+https://github.com/Watfaq/clash-rs.git?branch=android#66242e04092135397cef2a6a3585015d979b135f"
 dependencies = [
  "aead",
  "aes",
@@ -2428,6 +2429,7 @@ dependencies = [
  "rustls 0.23.36",
  "rustls-native-certs",
  "rustls-pki-types",
+ "rustls-platform-verifier",
  "tokio",
  "tokio-rustls",
  "tower-service",
@@ -4584,7 +4586,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6306,6 +6308,7 @@ dependencies = [
 [[package]]
 name = "watfaq-dns"
 version = "0.9.4"
+source = "git+https://github.com/Watfaq/clash-rs.git?branch=android#66242e04092135397cef2a6a3585015d979b135f"
 dependencies = [
  "async-trait",
  "futures",
@@ -6324,6 +6327,7 @@ dependencies = [
 [[package]]
 name = "watfaq-netstack"
 version = "0.1.0"
+source = "git+https://github.com/Watfaq/clash-rs.git?branch=android#66242e04092135397cef2a6a3585015d979b135f"
 dependencies = [
  "bytes",
  "etherparse",

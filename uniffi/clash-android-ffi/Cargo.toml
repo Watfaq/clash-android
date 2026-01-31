@@ -41,7 +41,7 @@ http-body-util = "0.1"
 hyperlocal = "0.9"
 urlencoding = "2"
 hyper-http-proxy = { version = "1", default-features = false, features = ["rustls-tls-webpki-roots"] }
-hyper-rustls = { version = "0.27", features = ["webpki-tokio", "http1", "tls12", "logging", "aws-lc-rs"] }
+hyper-rustls = { version = "0.27", features = ["rustls-platform-verifier", "http1", "tls12", "logging", "aws-lc-rs"] }
 rustls = { version = "0.23", default-features = false, features = ["std", "aws-lc-rs"] }
 webpki-roots = "1"
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream"] }
@@ -52,9 +52,9 @@ rustls-platform-verifier = "0.6.2" # sync with gradle/libs.versions.toml
 
 [dependencies.clash-lib]
 package = "clash-lib"
-# branch = "android"
-# git = "https://github.com/Watfaq/clash-rs.git"
-path = "../../../clash-rs/clash-lib"
+branch = "android"
+git = "https://github.com/Watfaq/clash-rs.git"
+# path = "../../../clash-rs/clash-lib"
 features = [
     "tuic", 
     "shadowquic",
