@@ -20,7 +20,10 @@ import rs.clash.android.Global
 import rs.clash.android.model.Profile
 import rs.clash.android.model.ProfileType
 import uniffi.clash_android_ffi.EyreException
+import uniffi.clash_android_ffi.DownloadProgressCallback
+import uniffi.clash_android_ffi.DownloadProgress
 import uniffi.clash_android_ffi.downloadConfig
+import uniffi.clash_android_ffi.downloadConfigWithProgress
 import uniffi.clash_android_ffi.formatEyreError
 import uniffi.clash_android_ffi.verifyConfig
 import java.io.File
@@ -317,6 +320,10 @@ class ProfileViewModel : ViewModel() {
 	var isDownloading by mutableStateOf(false)
 		private set
 
+	// Download progress state
+	var downloadProgress by mutableStateOf<DownloadProgress?>(null)
+		private set
+
 	fun addRemoteProfile(
 		context: Context,
 		profileName: String,
@@ -327,6 +334,7 @@ class ProfileViewModel : ViewModel() {
 	) {
 		viewModelScope.launch {
 			isDownloading = true
+			downloadProgress = null
 			try {
 				// Create unique file name based on profile name
 				val fileName = profileName.replace(Regex("[^a-zA-Z0-9\\u4e00-\\u9fa5_-]"), "_")
@@ -337,14 +345,26 @@ class ProfileViewModel : ViewModel() {
 					"http://127.0.0.1:$port"
 				}
 				
+				// Progress callback - update on main thread
+				val progressCallback = object : DownloadProgressCallback {
+					override fun onProgress(progress: DownloadProgress) {
+						Log.d("ProfileViewModel", "Download progress: ${progress.downloaded}/${progress.total}")
+						viewModelScope.launch(Dispatchers.Main) {
+							downloadProgress = progress
+							Log.d("ProfileViewModel", "Progress updated on main thread")
+						}
+					}
+				}
+				
 				// Download config from URL using Rust FFI
 				withContext(Dispatchers.IO) {
 					val result =
-						downloadConfig(
+						downloadConfigWithProgress(
 							url,
 							file.absolutePath,
 							userAgent,
 							effectiveProxyUrl,
+							progressCallback,
 						)
 					
 					if (!result.success) {
@@ -398,6 +418,7 @@ class ProfileViewModel : ViewModel() {
 				}
 			} finally {
 				isDownloading = false
+				downloadProgress = null
 			}
 		}
 	}
@@ -415,18 +436,30 @@ class ProfileViewModel : ViewModel() {
 		
 		viewModelScope.launch {
 			isDownloading = true
+			downloadProgress = null
 			try {
 				withContext(Dispatchers.IO) {
 					val file = File(profile.filePath)
 					// Use provided parameters or fall back to profile's stored values
 					val effectiveUserAgent = userAgent ?: profile.userAgent
 					val effectiveProxyUrl = proxyUrl ?: profile.proxyUrl
+					
+					// Progress callback - update on main thread
+					val progressCallback = object : DownloadProgressCallback {
+						override fun onProgress(progress: DownloadProgress) {
+							viewModelScope.launch(Dispatchers.Main) {
+								downloadProgress = progress
+							}
+						}
+					}
+					
 					val result =
-						downloadConfig(
+						downloadConfigWithProgress(
 							profile.url,
 							file.absolutePath,
 							effectiveUserAgent,
 							effectiveProxyUrl,
+							progressCallback,
 						)
 					
 					if (!result.success) {
@@ -471,6 +504,7 @@ class ProfileViewModel : ViewModel() {
 				}
 			} finally {
 				isDownloading = false
+				downloadProgress = null
 			}
 		}
 	}
