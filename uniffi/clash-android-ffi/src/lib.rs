@@ -70,10 +70,11 @@ pub struct FinalProfile {
 
 #[unsafe(export_name = "Java_rs_clash_android_MainActivity_javaInit")]
 pub extern "system" fn java_init(
-    env: jni::JNIEnv,
+    mut env: jni::JNIEnv,
     _class: jni::objects::JClass,
-    _app: jni::objects::JObject,
+    app: jni::objects::JObject,
 ) {
+    
     let vm = env.get_java_vm().unwrap();
     static VM: OnceCell<jni::JavaVM> = OnceCell::new();
     _ = VM.set(vm);
@@ -88,7 +89,7 @@ pub extern "system" fn java_init(
         builder
     };
     set_runtime_builder(Box::new(builder));
-
+    _ = rustls_platform_verifier::android::init_with_env(&mut env, app);
     static INIT: Once = Once::new();
     INIT.call_once(|| {
         let level = if cfg!(debug_assertions) {

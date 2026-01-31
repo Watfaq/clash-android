@@ -17,76 +17,38 @@ pub async fn download_config(
     user_agent: Option<String>,
     proxy_url: Option<String>,
 ) -> Result<DownloadResult, EyreError> {
-    use http_body_util::BodyExt;
-    use hyper_util::client::legacy::Client;
-    use hyper_util::rt::TokioExecutor;
-
     info!("Starting download from: {}", url);
-
-    let uri: hyper::Uri = url.parse().map_err(|e| eyre::eyre!("Invalid URL: {}", e))?;
 
     let ua = user_agent.unwrap_or_else(|| "clash-android/1.0".to_string());
     info!("Using User-Agent: {}", ua);
 
-    // Build client with or without proxy
-    let response = if let Some(proxy) = proxy_url {
-        use hyper_http_proxy::{Intercept, Proxy, ProxyConnector};
-        use hyper_rustls::HttpsConnectorBuilder;
+    // Build reqwest client
+    let mut client_builder = reqwest::Client::builder()
+        .user_agent(&ua)
+        .redirect(reqwest::redirect::Policy::limited(10));
 
+    // Add proxy if provided
+    if let Some(proxy) = proxy_url {
         info!("Using proxy: {}", proxy);
-        let proxy_uri: hyper::Uri = proxy
-            .parse()
+        let proxy = reqwest::Proxy::all(&proxy)
             .map_err(|e| eyre::eyre!("Invalid proxy URL: {}", e))?;
+        client_builder = client_builder.proxy(proxy);
+    }
 
-        let proxy = Proxy::new(Intercept::All, proxy_uri);
-        let https_connector = HttpsConnectorBuilder::new()
-            .with_webpki_roots()
-            .https_or_http()
-            .enable_http1()
-            .build();
-        let proxy_connector = ProxyConnector::from_proxy(https_connector, proxy)
-            .map_err(|e| eyre::eyre!("Failed to create proxy connector: {}", e))?;
+    let client = client_builder
+        .build()
+        .map_err(|e| eyre::eyre!("Failed to build HTTP client: {}", e))?;
 
-        let client = Client::builder(TokioExecutor::new()).build(proxy_connector);
+    // Send request
+    info!("Sending request to: {}", url);
+    let response = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| eyre::eyre!("Failed to send request: {}", e))?;
 
-        // Build request with proper headers
-        let req = hyper::Request::builder()
-            .method("GET")
-            .uri(&uri)
-            .header("User-Agent", &ua)
-            .header("Accept", "*/*")
-            .body(http_body_util::Empty::<bytes::Bytes>::new())
-            .map_err(|e| eyre::eyre!("Failed to build request: {}", e))?;
-
-        info!("Sending request with proxy to: {}", uri);
-        client.request(req).await?
-    } else {
-        use hyper_rustls::HttpsConnectorBuilder;
-
-        let https_connector = HttpsConnectorBuilder::new()
-            .with_webpki_roots()
-            .https_or_http()
-            .enable_http1()
-            .build();
-
-        let client = Client::builder(TokioExecutor::new()).build(https_connector);
-
-        // Build request with proper headers
-        let req = hyper::Request::builder()
-            .method("GET")
-            .uri(&uri)
-            .header("User-Agent", &ua)
-            .header("Accept", "*/*")
-            .body(http_body_util::Empty::<bytes::Bytes>::new())
-            .context("Failed to build request")?;
-
-        info!("Sending request to: {}", uri);
-        client.request(req).await?
-    };
-
-    if !response.status().is_success() {
-        let status = response.status();
-
+    let status = response.status();
+    if !status.is_success() {
         error!("HTTP request failed with status: {} for URL: {}", status, url);
         return Ok(DownloadResult {
             success: false,
@@ -96,12 +58,10 @@ pub async fn download_config(
     }
 
     // Download response body
-    let body = response.into_body();
-    let bytes = body
-        .collect()
+    let bytes = response
+        .bytes()
         .await
-        .map_err(|e| eyre::eyre!("Failed to read response body: {}", e))?
-        .to_bytes();
+        .map_err(|e| eyre::eyre!("Failed to read response body: {}", e))?;
 
     // Create output file and write
     _ = tokio::fs::File::create(&output_path)

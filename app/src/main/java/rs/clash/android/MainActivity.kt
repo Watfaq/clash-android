@@ -16,7 +16,7 @@ import rs.clash.android.theme.ClashAndroidTheme
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
-	external fun javaInit()
+	external fun javaInit(context: Context)
 
 	private val notificationPermissionLauncher =
 		registerForActivityResult(
@@ -33,7 +33,7 @@ class MainActivity : ComponentActivity() {
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		System.loadLibrary("clash_android_ffi")
-		javaInit()
+		javaInit(this)
 
 		// Apply language preference
 		applyLanguagePreference()

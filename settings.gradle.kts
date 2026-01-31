@@ -11,13 +11,6 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-dependencyResolutionManagement {
-
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
 
 rootProject.name = "clash-android"
 include(":app")
