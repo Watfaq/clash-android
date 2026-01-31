@@ -36,10 +36,29 @@ data class FileInfo(
 	val size: Long = 0,
 )
 
+data class ErrorInfo(
+	val message: String,
+	val fullMessage: String,
+	val timestamp: Long = System.currentTimeMillis()
+)
+
 class ProfileViewModel : ViewModel() {
 	private val prefs = Global.application.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
 	var selectedFile by mutableStateOf<FileInfo?>(null)
 		private set
+
+	// Error state for UI display
+	var errorInfo by mutableStateOf<ErrorInfo?>(null)
+		private set
+
+	fun clearError() {
+		errorInfo = null
+	}
+
+	private fun setError(shortMessage: String, fullMessage: String) {
+		errorInfo = ErrorInfo(shortMessage, fullMessage)
+		Log.e("ProfileViewModel", fullMessage)
+	}
 
 	var isImporting by mutableStateOf(false)
 		private set
@@ -182,7 +201,8 @@ class ProfileViewModel : ViewModel() {
 			Toast.makeText(context, "配置文件导入成功", Toast.LENGTH_SHORT).show()
 			file.absolutePath
 		} catch (e: Exception) {
-			Toast.makeText(context, "导入失败: ${e.message}", Toast.LENGTH_LONG).show()
+			val errorMessage = e.message ?: e.toString()
+			setError("导入配置失败", "导入配置失败: $errorMessage")
 			null
 		} finally {
 			isImporting = false
@@ -328,13 +348,9 @@ class ProfileViewModel : ViewModel() {
 						)
 					
 					if (!result.success) {
+						val errorMsg = result.errorMessage ?: "未知错误"
 						withContext(Dispatchers.Main) {
-							Toast
-								.makeText(
-									context,
-									"下载失败: ${result.errorMessage ?: "未知错误"}",
-									Toast.LENGTH_LONG,
-								).show()
+							setError("下载配置失败", "下载配置失败: $errorMsg")
 						}
 						return@withContext
 					}
@@ -344,12 +360,7 @@ class ProfileViewModel : ViewModel() {
 					if (!isValid) {
 						file.delete()
 						withContext(Dispatchers.Main) {
-							Toast
-								.makeText(
-									context,
-									"配置文件验证失败，已删除",
-									Toast.LENGTH_LONG,
-								).show()
+							setError("配置文件验证失败", "配置文件验证失败，已删除")
 						}
 						return@withContext
 					}
@@ -377,16 +388,13 @@ class ProfileViewModel : ViewModel() {
 				}
 			} catch (e: EyreException){
 				val errorMessage = formatEyreError(e)
-
-				Log.e("profile", errorMessage)
 				withContext(Dispatchers.Main) {
-					Toast.makeText(context, "添加失败: $errorMessage", Toast.LENGTH_LONG).show()
+					setError("添加远程配置失败", "添加远程配置失败: $errorMessage")
 				}
 			} catch (e: Exception) {
 				val errorMessage = e.message ?: e.toString()
-				Log.e("profile", errorMessage)
 				withContext(Dispatchers.Main) {
-					Toast.makeText(context, "添加失败: $errorMessage", Toast.LENGTH_LONG).show()
+					setError("添加远程配置失败", "添加远程配置失败: $errorMessage")
 				}
 			} finally {
 				isDownloading = false
@@ -422,13 +430,9 @@ class ProfileViewModel : ViewModel() {
 						)
 					
 					if (!result.success) {
+						val errorMsg = result.errorMessage ?: "未知错误"
 						withContext(Dispatchers.Main) {
-							Toast
-								.makeText(
-									context,
-									"更新失败: ${result.errorMessage ?: "未知错误"}",
-									Toast.LENGTH_LONG,
-								).show()
+							setError("更新配置失败", "更新配置失败: $errorMsg")
 						}
 						return@withContext
 					}
@@ -437,7 +441,7 @@ class ProfileViewModel : ViewModel() {
 					val (isValid, _) = verify(file.absolutePath)
 					if (!isValid) {
 						withContext(Dispatchers.Main) {
-							Toast.makeText(context, "配置文件验证失败", Toast.LENGTH_LONG).show()
+							setError("配置文件验证失败", "配置文件验证失败")
 						}
 						return@withContext
 					}
@@ -461,8 +465,9 @@ class ProfileViewModel : ViewModel() {
 					}
 				}
 			} catch (e: Exception) {
+				val errorMessage = e.message ?: e.toString()
 				withContext(Dispatchers.Main) {
-					Toast.makeText(context, "更新失败: ${e.message}", Toast.LENGTH_LONG).show()
+					setError("更新配置失败", "更新配置失败: $errorMessage")
 				}
 			} finally {
 				isDownloading = false

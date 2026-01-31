@@ -23,7 +23,7 @@ strip = true
 
 [profile.dev]
 opt-level = 1
-panic = "abort"
+panic = "unwind"
 strip = "debuginfo"
 
 [profile.dev.package.backtrace]

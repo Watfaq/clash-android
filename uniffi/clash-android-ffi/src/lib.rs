@@ -91,27 +91,6 @@ pub extern "system" fn java_init(
 
     static INIT: Once = Once::new();
     INIT.call_once(|| {
-        // Setup panic hook to capture panics on Android
-        std::panic::set_hook(Box::new(|panic_info| {
-            let payload = panic_info.payload();
-            let message = if let Some(s) = payload.downcast_ref::<&str>() {
-                s.to_string()
-            } else if let Some(s) = payload.downcast_ref::<String>() {
-                s.clone()
-            } else {
-                "Unknown panic payload".to_string()
-            };
-
-            let location = if let Some(loc) = panic_info.location() {
-                format!("{}:{}:{}", loc.file(), loc.line(), loc.column())
-            } else {
-                "Unknown location".to_string()
-            };
-
-            error!("PANIC caught: {} at {}", message, location);
-            error!("Backtrace:\n{}", std::backtrace::Backtrace::force_capture());
-        }));
-
         let level = if cfg!(debug_assertions) {
             LogLevel::Debug
         } else {
@@ -124,7 +103,14 @@ pub extern "system" fn java_init(
         }
         init_logger(level.into());
         color_eyre::install().unwrap();
-        tracing::info!("Init logger and panic hook");
+
+        // Install aws-lc-rs as the default crypto provider
+        if let Err(e) = rustls::crypto::aws_lc_rs::default_provider().install_default() {
+            error!("Failed to install default crypto provider: {:?}", e);
+        } else {
+            info!("Successfully installed aws-lc-rs crypto provider");
+        }
+        info!("Init logger and crypto provider initialized");
     });
 }
 

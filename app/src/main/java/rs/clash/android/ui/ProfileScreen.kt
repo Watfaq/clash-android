@@ -44,6 +44,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -93,6 +97,24 @@ fun ProfileScreen(
 	val remoteProxyUrl = remember { mutableStateOf("") }
 
 	var showInfoDialog by remember { mutableStateOf(false) }
+	var showErrorDetailsDialog by remember { mutableStateOf(false) }
+	val snackbarHostState = remember { SnackbarHostState() }
+	
+	// Handle error display with Snackbar
+	LaunchedEffect(vm.errorInfo) {
+		vm.errorInfo?.let { error ->
+			snackbarHostState.showSnackbar(
+				message = error.message,
+				actionLabel = "详情",
+				duration = SnackbarDuration.Long
+			).let { result ->
+				if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+					showErrorDetailsDialog = true
+				}
+			}
+		}
+	}
+	
 	// Load saved file path on first composition
 	LaunchedEffect(Unit) {
 		vm.loadSavedFilePath()
@@ -118,6 +140,44 @@ fun ProfileScreen(
 				- 切换配置文件后需要重启应用。
 				""".trimIndent(),
 			onDismiss = { showInfoDialog = false },
+		)
+	}
+
+	// Error details dialog
+	if (showErrorDetailsDialog && vm.errorInfo != null) {
+		AlertDialog(
+			onDismissRequest = { 
+				showErrorDetailsDialog = false
+				vm.clearError()
+			},
+			icon = {
+				Icon(
+					imageVector = Icons.Filled.Error,
+					contentDescription = null,
+					tint = MaterialTheme.colorScheme.error
+				)
+			},
+			title = { Text("错误详情") },
+			text = {
+				Column(
+					modifier = Modifier
+						.fillMaxWidth()
+						.verticalScroll(rememberScrollState())
+				) {
+					Text(
+						text = vm.errorInfo!!.fullMessage,
+						style = MaterialTheme.typography.bodyMedium
+					)
+				}
+			},
+			confirmButton = {
+				TextButton(onClick = { 
+					showErrorDetailsDialog = false
+					vm.clearError()
+				}) {
+					Text("确定")
+				}
+			}
 		)
 	}
 
@@ -285,6 +345,16 @@ fun ProfileScreen(
 
 	Scaffold(
 		modifier = modifier,
+		snackbarHost = {
+			SnackbarHost(hostState = snackbarHostState) { data ->
+				Snackbar(
+					snackbarData = data,
+					containerColor = MaterialTheme.colorScheme.errorContainer,
+					contentColor = MaterialTheme.colorScheme.onErrorContainer,
+					actionColor = MaterialTheme.colorScheme.error
+				)
+			}
+		},
 		topBar = {
 			TopAppBar(
 				title = { Text(stringResource(R.string.profile_title)) },
