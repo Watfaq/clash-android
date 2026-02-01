@@ -206,15 +206,15 @@ impl ClashController {
         {
             use jemalloc_ctl::{epoch, stats};
             // Advance the epoch to update statistics
-            epoch::advance().context("Failed to advance jemalloc epoch")?;
+            epoch::advance().wrap_err("Failed to advance jemalloc epoch")?;
             
             // Read allocated memory in bytes
             let allocated = stats::allocated::read()
-                .context("Failed to read allocated memory")?;
+                .wrap_err("Failed to read allocated memory")?;
             
             // Read resident memory in bytes
             let resident = stats::resident::read()
-                .context("Failed to read resident memory")?;
+                .wrap_err("Failed to read resident memory")?;
             
             Ok(MemoryResponse {
                 inuse: allocated as i64,
