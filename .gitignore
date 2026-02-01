@@ -28,12 +28,12 @@ replay_pid*
 
 *.iml
 .gradle
-/local.properties
-/.idea/*
+.idea
 .DS_Store
-/build
+build
 /captures
 .externalNativeBuild
 .cxx
+
 local.properties
 signing.properties

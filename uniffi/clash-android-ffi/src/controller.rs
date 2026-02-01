@@ -202,7 +202,30 @@ impl ClashController {
 
     /// Get memory statistics
     pub async fn get_memory(&self) -> Result<MemoryResponse, EyreError> {
-        self.request("GET", "/memory", None).await
+        #[cfg(feature = "jemallocator")]
+        {
+            use jemalloc_ctl::{epoch, stats};
+            // Advance the epoch to update statistics
+            epoch::advance().context("Failed to advance jemalloc epoch")?;
+            
+            // Read allocated memory in bytes
+            let allocated = stats::allocated::read()
+                .context("Failed to read allocated memory")?;
+            
+            // Read resident memory in bytes
+            let resident = stats::resident::read()
+                .context("Failed to read resident memory")?;
+            
+            Ok(MemoryResponse {
+                inuse: allocated as i64,
+                oslimit: resident as i64,
+            })
+        }
+        
+        #[cfg(not(feature = "jemallocator"))]
+        {
+            self.request("GET", "/memory", None).await
+        }
     }
 
     /// Get active connections
