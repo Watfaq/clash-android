@@ -49,7 +49,7 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls", "s
 tokio-stream = "0.1"
 # Memory allocator
 tikv-jemallocator = { version = "0.6", optional = true }
-jemalloc-ctl = { package = "tikv-jemalloc-ctl", optional = true, version = "0.6.1" }
+jemalloc-ctl = { package = "tikv-jemalloc-ctl", optional = true, version = "0.6.1", features = ["stats"] }
 rustls-platform-verifier = "0.6.2" # sync with gradle/libs.versions.toml
 
 [dependencies.clash-lib]
