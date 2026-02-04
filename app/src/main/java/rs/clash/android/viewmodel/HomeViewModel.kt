@@ -4,7 +4,6 @@ import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.VpnService
-import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import androidx.compose.runtime.getValue
@@ -117,7 +116,7 @@ class HomeViewModel : ViewModel() {
 			totalDownload = connResponse.downloadTotal
 			totalUpload = connResponse.uploadTotal
 		} catch (e: EyreException) {
-			showMessage("Failed to fetch stats ${formatEyreError(e)}" )
+			showMessage("Failed to fetch stats ${formatEyreError(e)}")
 		}
 	}
 

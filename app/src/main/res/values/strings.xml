@@ -62,6 +62,12 @@
     <string name="settings_app_filter_desc">选择允许或排除的应用</string>
     <string name="settings_notification_permission">通知权限</string>
     <string name="settings_notification_permission_required">需要通知权限才能显示前台服务通知</string>
+    <string name="settings_developer">开发者</string>
+    <string name="settings_dump_memory">导出内存分析</string>
+    <string name="settings_dump_memory_desc">导出内存使用火焰图并打开</string>
+    <string name="settings_dump_memory_open">打开火焰图</string>
+    <string name="settings_dump_memory_success">已导出到: %1$s</string>
+    <string name="settings_dump_memory_error">操作失败: %1$s</string>
     <string name="settings_about">关于</string>
     <string name="settings_version">版本</string>
     <string name="dark_mode_system">跟随系统</string>

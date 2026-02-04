@@ -7,7 +7,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import rs.clash.android.Global
 import rs.clash.android.R
+import uniffi.clash_android_ffi.ClashController
+import uniffi.clash_android_ffi.EyreException
+import uniffi.clash_android_ffi.formatEyreError
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 enum class DarkModePreference {
 	SYSTEM,
@@ -31,6 +41,8 @@ class SettingsViewModel(
 	application: Application,
 ) : AndroidViewModel(application) {
 	private val prefs = application.getSharedPreferences("settings", Context.MODE_PRIVATE)
+
+	private val controller by lazy { ClashController("${Global.application.cacheDir}/clash.sock") }
 
 	var darkModePreference: DarkModePreference by mutableStateOf(loadDarkModePreference())
 		private set
@@ -172,6 +184,26 @@ class SettingsViewModel(
 			AppFilterMode.ALL -> context.getString(R.string.app_selector_mode_all)
 			AppFilterMode.ALLOWED -> context.getString(R.string.app_selector_selected, allowedApps.size)
 			AppFilterMode.DISALLOWED -> context.getString(R.string.app_selector_selected, disallowedApps.size)
+		}
+	}
+
+	fun dumpMemoryProfile(
+		onSuccess: (File) -> Unit,
+		onError: (String) -> Unit,
+	) {
+		viewModelScope.launch {
+			try {
+				val context = getApplication<Application>().applicationContext
+				val cacheDir = context.cacheDir
+				val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+				val fileName = "clash_memory_dump_$timestamp.svg"
+				val outputFile = File(cacheDir, fileName)
+				
+				controller.dump(outputFile.absolutePath)
+				onSuccess(outputFile)
+			} catch (e: EyreException) {
+				onError(formatEyreError(e))
+			}
 		}
 	}
 }

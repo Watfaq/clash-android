@@ -1,3 +1,8 @@
-[*.{kt,kts}]
+[*]
+charset = utf-8
+end_of_line = lf
 indent_style = tab
-ktlint_standard_function-naming = disabled
+
+[*.{kt,kts}]
+ktlint_function_naming_ignore_when_annotated_with = Composable
+compose_allowed_composition_locals = LocalSnackbarController

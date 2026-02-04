@@ -13,3 +13,6 @@ linker = "i686-linux-android23-clang"
 
 [target.x86_64-linux-android]
 linker = "x86_64-linux-android23-clang"
+
+[env]
+RUSTC_BOOTSTRAP = { value = "1" }

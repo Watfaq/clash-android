@@ -13,12 +13,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import rs.clash.android.ui.snackbar.SnackbarController
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import rs.clash.android.Global
 import rs.clash.android.model.Profile
 import rs.clash.android.model.ProfileType
+import rs.clash.android.ui.snackbar.SnackbarController
 import uniffi.clash_android_ffi.DownloadProgress
 import uniffi.clash_android_ffi.DownloadProgressCallback
 import uniffi.clash_android_ffi.EyreException
@@ -182,7 +182,7 @@ class ProfileViewModel : ViewModel() {
 
 			SnackbarController.showMessage("配置文件导入成功")
 			file.absolutePath
-		}  catch (e: EyreException) {
+		} catch (e: EyreException) {
 			SnackbarController.showMessage("导入配置失败: ${formatEyreError(e)}")
 			null
 		} catch (e: Exception) {
@@ -483,9 +483,9 @@ class ProfileViewModel : ViewModel() {
 					}
 				}
 			} catch (e: EyreException) {
-			SnackbarController.showMessage("添加远程配置失败: ${formatEyreError(e)}")
-		} catch (e: Exception) {
-			SnackbarController.showMessage("更新配置失败: ${e.message ?: e.toString()}")
+				SnackbarController.showMessage("添加远程配置失败: ${formatEyreError(e)}")
+			} catch (e: Exception) {
+				SnackbarController.showMessage("更新配置失败: ${e.message ?: e.toString()}")
 			} finally {
 				isDownloading = false
 				downloadProgress = null

@@ -264,6 +264,34 @@ impl ClashController {
         let config = self.get_configs().await?;
         Ok(config.mode)
     }
+
+    /// Dump memory profiling flamegraph to file
+    pub async fn dump(&self, file_path: String) -> Result<(), EyreError> {
+        #[cfg(feature = "jemallocator")]
+        {
+            let mut prof_ctl = jemalloc_pprof::PROF_CTL
+                .as_ref()
+                .ok_or_else(|| eyre::eyre!("Profiling not initialized"))?
+                .lock()
+                .await;
+            
+            if !prof_ctl.activated() {
+                return Err(eyre::eyre!("Profiling is not activated").into());
+            }
+            
+            let svg = prof_ctl
+                .dump_flamegraph()
+                .map_err(|e| eyre::eyre!("Failed to dump flamegraph: {}", e))?;
+            
+            tokio::fs::write(&file_path, svg).await
+                .wrap_err_with(|| format!("Failed to write flamegraph to {}", file_path))?;
+        }
+        
+        #[cfg(not(feature = "jemallocator"))]
+        {
+            Err(eyre::eyre!("clash-rs is not compiled with jemallocator feature").into())
+        }
+    }
 }
 
 impl ClashController {

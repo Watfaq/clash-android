@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 [features]
 default = []
 ffi-trace = ["uniffi/ffi-trace"]
-jemallocator = ["dep:tikv-jemallocator", "dep:jemalloc-ctl"]
+jemallocator = ["dep:tikv-jemallocator", "dep:jemalloc-ctl", "dep:jemalloc_pprof"]
 
 [dependencies]
 uniffi.workspace = true
@@ -47,9 +47,14 @@ rustls = { version = "0.23", default-features = false, features = ["std", "aws-l
 webpki-roots = "1"
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream"] }
 tokio-stream = "0.1"
+
+tempfile = "3"
+
 # Memory allocator
-tikv-jemallocator = { version = "0.6", optional = true }
+tikv-jemallocator = { version = "0.6", optional = true, features = ["profiling", "unprefixed_malloc_on_supported_platforms"] }
 jemalloc-ctl = { package = "tikv-jemalloc-ctl", optional = true, version = "0.6.1", features = ["stats"] }
+jemalloc_pprof = { version = "0.8", optional = true, features = ["symbolize","flamegraph"] }
+
 rustls-platform-verifier = "0.6.2" # sync with gradle/libs.versions.toml
 
 [dependencies.clash-lib]
