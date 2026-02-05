@@ -96,13 +96,14 @@ pub extern "system" fn java_init(
     set_runtime_builder(Box::new(builder));
     #[cfg(target_os = "android")]
     {
-        let mut env_mut = env;
-        _ = rustls_platform_verifier::android::init_with_env(&mut env_mut, app);
+        let mut env = env;
+        _ = rustls_platform_verifier::android::init_with_env(&mut env, app);
     }
     #[cfg(not(target_os = "android"))]
     {
         // On non-Android platforms, we don't need to initialize the platform verifier with env
-        _ = (env, app);
+        _ = env;
+        _ = app;
     }
     static INIT: Once = Once::new();
     INIT.call_once(|| {
