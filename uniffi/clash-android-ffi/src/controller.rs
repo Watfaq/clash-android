@@ -289,6 +289,7 @@ impl ClashController {
         
         #[cfg(not(feature = "jemallocator"))]
         {
+            _ = file_path;  // Suppress unused warning
             Err(eyre::eyre!("clash-rs is not compiled with jemallocator feature").into())
         }
     }

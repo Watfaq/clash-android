@@ -10,7 +10,7 @@ pub(crate) fn init_logger(level: LevelFilter) {
         .add_directive(format!("clash_android_ffi={}", level).parse().unwrap())
         .add_directive("warn".parse().unwrap());
 
-    let mut layers = Vec::new();
+    let layers: Vec<Box<dyn tracing_subscriber::Layer<_> + Send + Sync + 'static>> = Vec::new();
 
 
     #[cfg(target_os = "android")]

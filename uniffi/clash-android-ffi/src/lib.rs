@@ -75,7 +75,7 @@ pub struct FinalProfile {
 
 #[unsafe(export_name = "Java_rs_clash_android_MainActivity_javaInit")]
 pub extern "system" fn java_init(
-    mut env: jni::JNIEnv,
+    env: jni::JNIEnv,
     _class: jni::objects::JClass,
     app: jni::objects::JObject,
 ) {
@@ -94,7 +94,16 @@ pub extern "system" fn java_init(
         builder
     };
     set_runtime_builder(Box::new(builder));
-    _ = rustls_platform_verifier::android::init_with_env(&mut env, app);
+    #[cfg(target_os = "android")]
+    {
+        let mut env_mut = env;
+        _ = rustls_platform_verifier::android::init_with_env(&mut env_mut, app);
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        // On non-Android platforms, we don't need to initialize the platform verifier with env
+        _ = (env, app);
+    }
     static INIT: Once = Once::new();
     INIT.call_once(|| {
         let level = if cfg!(debug_assertions) {
