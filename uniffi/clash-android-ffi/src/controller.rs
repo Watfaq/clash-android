@@ -285,6 +285,8 @@ impl ClashController {
             
             tokio::fs::write(&file_path, svg).await
                 .wrap_err_with(|| format!("Failed to write flamegraph to {}", file_path))?;
+            
+            Ok(())
         }
         
         #[cfg(not(feature = "jemallocator"))]
