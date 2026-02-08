@@ -24,7 +24,7 @@ Clash Android 是一款基于 Clash 核心的现代化 Android VPN 代理客户�
   - Compose Destinations（导航框架）
 - **构建工具：** Gradle 8.13.2 (Kotlin DSL)
 - **最低支持版本：** Android 6.0 (API 23)
-- **目标版本：** Android 14 (API 36)
+- **目标版本：** Android 15 (API 36)
 
 ### Rust 核心
 - **核心语言：** Rust
