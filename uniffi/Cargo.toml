@@ -19,8 +19,8 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 panic = "unwind"
-# strip = true
-strip = "debuginfo"
+strip = true
+# strip = "debuginfo"
 
 [profile.dev]
 opt-level = 1
@@ -32,5 +32,3 @@ opt-level = 3
 
 [patch.crates-io]
 async-compat = { git = "https://github.com/element-hq/async-compat", rev = "5a27c8b290f1f1dcfc0c4ec22c464e38528aa591" }
-tikv-jemallocator = { git = "https://github.com/tikv/jemallocator.git", branch = "nightly" }
-tikv-jemalloc-ctl = { git = "https://github.com/tikv/jemallocator.git", branch = "nightly" }

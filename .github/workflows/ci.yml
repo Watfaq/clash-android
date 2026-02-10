@@ -48,23 +48,13 @@ jobs:
         with:
           ndk-version: r29
 
-      - name: Fix NDK libgcc issue
-        run: |
-          chmod +x .github/scripts/fix-ndk-libgcc.sh
-          .github/scripts/fix-ndk-libgcc.sh
-
       - name: Add Rust Android targets
         run: |
           rustup target add aarch64-linux-android
           rustup target add armv7-linux-androideabi
           rustup target add i686-linux-android
           rustup target add x86_64-linux-android
-      
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          version: "23.x"
- 
+
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-ndk

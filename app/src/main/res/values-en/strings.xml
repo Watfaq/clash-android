@@ -63,12 +63,6 @@
     <string name="settings_app_filter_desc">Select allowed or disallowed apps</string>
     <string name="settings_notification_permission">Notification Permission</string>
     <string name="settings_notification_permission_required">Notification permission required to show foreground service notification</string>
-    <string name="settings_developer">Developer</string>
-    <string name="settings_dump_memory">Export Memory Profile</string>
-    <string name="settings_dump_memory_desc">Export memory usage flamegraph and open</string>
-    <string name="settings_dump_memory_open">Open Flamegraph</string>
-    <string name="settings_dump_memory_success">Exported to: %1$s</string>
-    <string name="settings_dump_memory_error">Operation failed: %1$s</string>
     <string name="settings_about">About</string>
     <string name="settings_version">Version</string>
     <string name="dark_mode_system">System Default</string>

@@ -5,6 +5,8 @@
 
 Android SDK & NDK
 
+NixOS: [Trouble Shooting](https://github.com/tadfisher/android-nixpkgs?tab=readme-ov-file#troubleshooting)
+
 # Icon
 
 The icon "wind" is provided by [loading.io](https://loading.io/icon/to8zzb)
