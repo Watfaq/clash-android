@@ -21,7 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
@@ -51,7 +50,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -64,7 +62,6 @@ import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import rs.clash.android.MainActivity
 import rs.clash.android.R
 import rs.clash.android.ui.components.TextInfoDialog
-import rs.clash.android.ui.snackbar.SnackbarController
 import rs.clash.android.util.PermissionHelper
 import rs.clash.android.viewmodel.DarkModePreference
 import rs.clash.android.viewmodel.LanguagePreference
@@ -227,37 +224,6 @@ fun SettingsScreen(
 						onClick = {
 							navigator.navigate(AppSelectorScreenDestination)
 						},
-					)
-				}
-			}
-
-			// Developer Section
-			item {
-				SectionHeader(text = stringResource(R.string.settings_developer))
-			}
-
-			item {
-				val resource = LocalResources.current
-				SettingsCard {
-					SettingsItem(
-						icon = Icons.Default.Download,
-						title = stringResource(R.string.settings_dump_memory),
-						subtitle = stringResource(R.string.settings_dump_memory_desc),
-						onClick = {
-							viewModel.dumpMemoryProfile(
-								onSuccess = { fileName ->
-									SnackbarController.showMessage(
-										resource.getString(R.string.settings_dump_memory_success, fileName),
-									)
-								},
-								onError = { error ->
-									SnackbarController.showMessage(
-										resource.getString(R.string.settings_dump_memory_error, error),
-									)
-								},
-							)
-						},
-						showChevron = false,
 					)
 				}
 			}

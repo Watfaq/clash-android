@@ -11,7 +11,6 @@ crate-type = ["cdylib"]
 [features]
 default = []
 ffi-trace = ["uniffi/ffi-trace"]
-jemallocator = ["dep:tikv-jemallocator", "dep:jemalloc-ctl", "dep:jemalloc_pprof"]
 
 [dependencies]
 uniffi.workspace = true
@@ -50,11 +49,6 @@ tokio-stream = "0.1"
 
 tempfile = "3"
 
-# Memory allocator
-tikv-jemallocator = { version = "0.6", optional = true, features = ["profiling", "unprefixed_malloc_on_supported_platforms"] }
-jemalloc-ctl = { package = "tikv-jemalloc-ctl", optional = true, version = "0.6.1", features = ["stats"] }
-jemalloc_pprof = { version = "0.8", optional = true, features = ["symbolize","flamegraph"] }
-
 rustls-platform-verifier = "0.6.2" # sync with gradle/libs.versions.toml
 
 [dependencies.clash-lib]
@@ -64,7 +58,7 @@ git = "https://github.com/Watfaq/clash-rs.git"
 # path = "../../../clash-rs/clash-lib"
 features = [
     "tuic", 
-    "shadowquic",
+    #"shadowquic",
     "shadowsocks",
     "tun",
     "wireguard",

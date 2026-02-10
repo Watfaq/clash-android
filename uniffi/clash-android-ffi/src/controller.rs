@@ -202,31 +202,7 @@ impl ClashController {
 
     /// Get memory statistics
     pub async fn get_memory(&self) -> Result<MemoryResponse, EyreError> {
-        #[cfg(feature = "jemallocator")]
-        {
-            use jemalloc_ctl::{epoch, stats};
-            // Advance the epoch to update statistics
-            epoch::advance()
-                .map_err(|e| eyre::eyre!("Failed to advance jemalloc epoch: {}", e))?;
-            
-            // Read allocated memory in bytes
-            let allocated = stats::allocated::read()
-                .map_err(|e| eyre::eyre!("Failed to read allocated memory: {}", e))?;
-            
-            // Read resident memory in bytes
-            let resident = stats::resident::read()
-                .map_err(|e| eyre::eyre!("Failed to read resident memory: {}", e))?;
-            
-            Ok(MemoryResponse {
-                inuse: allocated as i64,
-                oslimit: resident as i64,
-            })
-        }
-        
-        #[cfg(not(feature = "jemallocator"))]
-        {
-            self.request("GET", "/memory", None).await
-        }
+        self.request("GET", "/memory", None).await
     }
 
     /// Get active connections
@@ -263,36 +239,6 @@ impl ClashController {
     pub async fn get_mode(&self) -> Result<Option<Mode>, EyreError> {
         let config = self.get_configs().await?;
         Ok(config.mode)
-    }
-
-    /// Dump memory profiling flamegraph to file
-    pub async fn dump(&self, file_path: String) -> Result<(), EyreError> {
-        #[cfg(feature = "jemallocator")]
-        {
-            let mut prof_ctl = jemalloc_pprof::PROF_CTL
-                .as_ref()
-                .ok_or_else(|| eyre::eyre!("Profiling not initialized"))?
-                .lock()
-                .await;
-            
-            if !prof_ctl.activated() {
-                return Err(eyre::eyre!("Profiling is not activated").into());
-            }
-            
-            let svg = prof_ctl
-                .dump_flamegraph()
-                .map_err(|e| eyre::eyre!("Failed to dump flamegraph: {}", e))?;
-            
-            tokio::fs::write(&file_path, svg).await
-                .wrap_err_with(|| format!("Failed to write flamegraph to {}", file_path))?;
-            
-            Ok(())
-        }
-        
-        #[cfg(not(feature = "jemallocator"))]
-        {
-            Err(eyre::eyre!("clash-rs is not compiled with jemallocator feature").into())
-        }
     }
 }
 
