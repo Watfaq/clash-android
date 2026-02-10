@@ -1,7 +1,7 @@
 package rs.clash.android
 
-import android.util.Log
 import android.content.Context
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import uniffi.clash_android_ffi.EyreException
 import uniffi.clash_android_ffi.formatEyreError

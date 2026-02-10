@@ -64,8 +64,10 @@ pub struct FinalProfile {
     pub mixed_port: u16,
 }
 
-fn java_init_impl(
+#[unsafe(export_name = "Java_rs_clash_android_Application_javaInit")]
+pub extern "system" fn java_init(
     mut env: jni::JNIEnv,
+    _this: jni::objects::JObject,
     app: jni::objects::JObject,
 ) {
     let vm = env.get_java_vm().unwrap();
@@ -106,24 +108,6 @@ fn java_init_impl(
         }
         info!("Init logger and crypto provider initialized");
     });
-}
-
-#[unsafe(export_name = "Java_rs_clash_android_MainActivity_javaInit")]
-pub extern "system" fn java_init_main_activity(
-    env: jni::JNIEnv,
-    _this: jni::objects::JObject,
-    app: jni::objects::JObject,
-) {
-    java_init_impl(env, app);
-}
-
-#[unsafe(export_name = "Java_rs_clash_android_Application_javaInit")]
-pub extern "system" fn java_init_application(
-    env: jni::JNIEnv,
-    _this: jni::objects::JObject,
-    app: jni::objects::JObject,
-) {
-    java_init_impl(env, app);
 }
 
 #[uniffi::export]
