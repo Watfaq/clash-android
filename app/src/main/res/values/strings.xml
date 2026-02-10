@@ -117,4 +117,12 @@
     <string name="restart_confirm_title">确认重启</string>
     <string name="restart_confirm_message">确定要重启应用吗？</string>
     <string name="confirm">确认</string>
+
+    <!-- Quick Settings Tile -->
+    <string name="notification_action_stop_core">关闭核心</string>
+    <string name="tile_core_toggle_label">Clash-Rs</string>
+    <string name="tile_core_running">运行中</string>
+    <string name="tile_core_stopped">已停止</string>
+    <string name="tile_vpn_permission_required">请先授权 VPN，再使用快捷开关</string>
+    <string name="tile_core_start_failed">快捷开关启动核心失败，请查看日志</string>
 </resources>

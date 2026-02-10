@@ -10,6 +10,7 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import rs.clash.android.Global
@@ -24,8 +25,25 @@ var tunService: TunService? = null
 
 @SuppressLint("VpnServicePolicy")
 class TunService : VpnService() {
+	companion object {
+		const val ACTION_START_CORE = "rs.clash.android.action.START_CORE"
+		const val ACTION_STOP_CORE = "rs.clash.android.action.STOP_CORE"
+		private const val EXTRA_FORCE_FOREGROUND = "rs.clash.android.extra.FORCE_FOREGROUND"
+
+		fun createStartIntent(
+			context: Context,
+			forceForeground: Boolean = false,
+		): Intent =
+			Intent(context, TunService::class.java)
+				.setAction(ACTION_START_CORE)
+				.putExtra(EXTRA_FORCE_FOREGROUND, forceForeground)
+
+		fun createStopIntent(context: Context): Intent = Intent(context, TunService::class.java).setAction(ACTION_STOP_CORE)
+	}
+
 	private var vpnInterface: ParcelFileDescriptor? = null
 	private var tunFd: Int? = null
+	private var runVpnJob: Job? = null
 	private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 	private var isDestroying = false
 
@@ -34,21 +52,38 @@ class TunService : VpnService() {
 		flags: Int,
 		startId: Int,
 	): Int {
-		Log.i("clash", "onStartCommand")
-
-		startForegroundServiceIfNeeded()
-
-		serviceScope.launch {
-			try {
-				runVpn()
-			} catch (e: Exception) {
-				Log.e("clash", "Error in runVpn", e)
+		val forceForeground = intent?.getBooleanExtra(EXTRA_FORCE_FOREGROUND, false) == true
+		Log.i("clash", "onStartCommand forceForeground=$forceForeground")
+		when (intent?.action) {
+			ACTION_STOP_CORE -> {
+				Log.i("clash", "Received stop action from shortcut/notification")
 				stopVpn()
+				return START_NOT_STICKY
 			}
 		}
 
+		synchronized(this) {
+			isDestroying = false
+		}
+		if (runVpnJob?.isActive == true) {
+			Log.i("clash", "VPN job already running, skip duplicate start")
+			return START_STICKY
+		}
+
+		startForegroundServiceIfNeeded(forceForeground)
+
+		runVpnJob =
+			serviceScope.launch {
+				try {
+					runVpn()
+				} catch (e: Exception) {
+					Log.e("clash", "Error in runVpn", e)
+					stopVpn()
+				}
+			}
+
 		tunService = this
-		Global.isServiceRunning.value = true
+		CoreToggleTileService.requestStateSync(this)
 		return START_STICKY
 	}
 
@@ -69,6 +104,7 @@ class TunService : VpnService() {
 	}
 
 	private suspend fun runVpn() {
+		val profilePath = resolveProfilePath()
 		val prefs = Global.application.getSharedPreferences("settings", Context.MODE_PRIVATE)
 		val builder = Builder()
 		builder.setSession("ClashRS VPNService")
@@ -111,9 +147,11 @@ class TunService : VpnService() {
 		}
 		
 		builder.allowBypass()
-		vpnInterface = builder.establish()
-
-		tunFd = vpnInterface?.fd
+		val established =
+			builder.establish()
+				?: throw IllegalStateException("Failed to establish VPN interface")
+		vpnInterface = established
+		tunFd = established.fd
 		val assets = Global.application.assets
 		listOf("Country.mmdb", "geosite.dat").forEach { name ->
 			assets
@@ -128,22 +166,46 @@ class TunService : VpnService() {
 
 		val finalProfile =
 			runClash(
-				Global.profilePath,
+				profilePath,
 				Global.application.cacheDir.toString(),
 				ProfileOverride(
-					tunFd!!,
+					established.fd,
 					fakeIp = prefs.getBoolean("fake_ip", false),
 					ipv6 = prefs.getBoolean("ipv6", true),
 				),
 			)
 		Global.proxyPort = finalProfile.mixedPort
+		Global.isServiceRunning.value = true
+		CoreToggleTileService.requestStateSync(this)
 	}
 
-	private fun startForegroundServiceIfNeeded() {
+	private fun resolveProfilePath(): String {
+		// App process may be recreated when started from Quick Settings tile.
+		// Restore selected profile path from persistent storage before starting core.
+		if (Global.profilePath.isBlank()) {
+			val prefs = Global.application.getSharedPreferences("file_prefs", Context.MODE_PRIVATE)
+			Global.profilePath = prefs.getString("profile_path", null).orEmpty()
+		}
+
+		val path = Global.profilePath.trim()
+		if (path.isEmpty()) {
+			throw IllegalStateException("No profile selected")
+		}
+
+		val configFile = File(path)
+		if (!configFile.exists() || !configFile.isFile) {
+			throw IllegalStateException("Profile file not found: $path")
+		}
+
+		return path
+	}
+
+	private fun startForegroundServiceIfNeeded(forceForeground: Boolean) {
 		val prefs = Global.application.getSharedPreferences("settings", Context.MODE_PRIVATE)
 		val foregroundServiceEnabled = prefs.getBoolean("foreground_service_enabled", false)
+		val shouldStartForeground = forceForeground || foregroundServiceEnabled
 
-		if (foregroundServiceEnabled) {
+		if (shouldStartForeground) {
 			// 检查通知权限
 			if (!PermissionHelper.hasNotificationPermission(this)) {
 				Log.w("clash", "Foreground service is enabled but notification permission is not granted")
@@ -178,6 +240,8 @@ class TunService : VpnService() {
 		Log.i("clash", "Cleaning up VPN service")
 		// pass `shutdown` t0 clash-lib
 		shutdown()
+		runVpnJob?.cancel()
+		runVpnJob = null
 
 		try {
 			vpnInterface?.close()
@@ -190,7 +254,7 @@ class TunService : VpnService() {
 		tunService = null
 		Global.proxyPort = null
 		Global.isServiceRunning.value = false
-		isDestroying = false
+		CoreToggleTileService.requestStateSync(this)
 	}
 
 	fun stopVpn() {

@@ -10,6 +10,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import rs.clash.android.MainActivity
 import rs.clash.android.R
+import rs.clash.android.service.TunService
 
 object NotificationHelper {
 	private const val CHANNEL_ID = "clash_vpn_service"
@@ -48,16 +49,29 @@ object NotificationHelper {
 				intent,
 				PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
 			)
+		val stopPendingIntent =
+			PendingIntent.getService(
+				context,
+				1,
+				TunService.createStopIntent(context),
+				PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+			)
 
-		return NotificationCompat
-			.Builder(context, CHANNEL_ID)
-			.setContentTitle("Clash VPN")
-			.setContentText("VPN 服务正在运行")
-			.setSmallIcon(R.drawable.ic_launcher_foreground)
-			.setContentIntent(pendingIntent)
-			.setOngoing(true)
-			.setPriority(NotificationCompat.PRIORITY_LOW)
-			.setCategory(NotificationCompat.CATEGORY_SERVICE)
-			.build()
+		val builder =
+			NotificationCompat
+				.Builder(context, CHANNEL_ID)
+				.setContentTitle("Clash VPN")
+				.setContentText("VPN 服务正在运行")
+				.setSmallIcon(R.drawable.ic_launcher_foreground)
+				.setContentIntent(pendingIntent)
+				.setOngoing(true)
+				.setPriority(NotificationCompat.PRIORITY_LOW)
+				.setCategory(NotificationCompat.CATEGORY_SERVICE)
+				.addAction(
+					android.R.drawable.ic_media_pause,
+					context.getString(R.string.notification_action_stop_core),
+					stopPendingIntent,
+				)
+		return builder.build()
 	}
 }

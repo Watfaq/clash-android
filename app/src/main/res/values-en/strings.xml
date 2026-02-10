@@ -118,5 +118,13 @@
     <string name="restart_confirm_title">Confirm Restart</string>
     <string name="restart_confirm_message">Are you sure you want to restart the app?</string>
     <string name="confirm">Confirm</string>
+    
+    <!-- Quick Settings Tile -->
+    <string name="notification_action_stop_core">Stop Core</string>
+    <string name="tile_core_toggle_label">Clash-Rs</string>
+    <string name="tile_core_running">Running</string>
+    <string name="tile_core_stopped">Stopped</string>
+    <string name="tile_vpn_permission_required">Please grant VPN permission before using quick toggle</string>
+    <string name="tile_core_start_failed">Quick tile failed to start core, please check logs</string>
 </resources>
 

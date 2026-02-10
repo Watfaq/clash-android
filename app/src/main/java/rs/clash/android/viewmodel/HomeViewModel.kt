@@ -188,7 +188,7 @@ class HomeViewModel : ViewModel() {
 		if (intent != null) {
 			launcher?.launch(intent)
 		} else {
-			app.startService(Intent(app, TunService::class.java))
+			app.startService(TunService.createStartIntent(app))
 		}
 	}
 

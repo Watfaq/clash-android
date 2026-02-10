@@ -1,9 +1,12 @@
 package rs.clash.android
 
 import android.Manifest
+import android.app.Activity.RESULT_OK
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,11 +15,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.core.content.ContextCompat
+import rs.clash.android.service.TunService
 import rs.clash.android.theme.ClashAndroidTheme
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
-	external fun javaInit(context: Context)
+	companion object {
+		const val EXTRA_START_CORE_FROM_SHORTCUT = "rs.clash.android.extra.START_CORE_FROM_SHORTCUT"
+	}
 
 	private val notificationPermissionLauncher =
 		registerForActivityResult(
@@ -30,16 +36,26 @@ class MainActivity : ComponentActivity() {
 			}
 		}
 
+	private val vpnPermissionLauncher =
+		registerForActivityResult(
+			ActivityResultContracts.StartActivityForResult(),
+		) { result ->
+			if (result.resultCode == RESULT_OK) {
+				startCoreService()
+			} else {
+				android.util.Log.i("clash", "VPN permission denied")
+			}
+		}
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		System.loadLibrary("clash_android_ffi")
-		javaInit(this)
 
 		// Apply language preference
 		applyLanguagePreference()
 
 		// Request notification permission (Android 13+)
 		requestNotificationPermission()
+		handleShortcutIntent(intent)
 
 		// enableEdgeToEdge()
 		setContent {
@@ -49,6 +65,33 @@ class MainActivity : ComponentActivity() {
 				}
 			}
 		}
+	}
+
+	override fun onNewIntent(intent: Intent) {
+		super.onNewIntent(intent)
+		setIntent(intent)
+		handleShortcutIntent(intent)
+	}
+
+	private fun handleShortcutIntent(intent: Intent?) {
+		if (intent?.getBooleanExtra(EXTRA_START_CORE_FROM_SHORTCUT, false) != true) {
+			return
+		}
+		intent.removeExtra(EXTRA_START_CORE_FROM_SHORTCUT)
+		requestVpnPermissionAndStartCore()
+	}
+
+	private fun requestVpnPermissionAndStartCore() {
+		val prepareIntent = VpnService.prepare(this)
+		if (prepareIntent != null) {
+			vpnPermissionLauncher.launch(prepareIntent)
+		} else {
+			startCoreService()
+		}
+	}
+
+	private fun startCoreService() {
+		startService(TunService.createStartIntent(this))
 	}
 
 	private fun applyLanguagePreference() {

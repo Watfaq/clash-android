@@ -1,14 +1,20 @@
 package rs.clash.android
 
 import android.util.Log
+import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import uniffi.clash_android_ffi.EyreException
 import uniffi.clash_android_ffi.formatEyreError
 import android.app.Application as AndroidApplication
 
 class Application : AndroidApplication() {
+	external fun javaInit(context: Context)
+
 	override fun onCreate() {
 		super.onCreate()
+		System.loadLibrary("clash_android_ffi")
+		javaInit(this)
+		Log.i("clash", "Native runtime initialized from Application")
 		// Setup uncaught exception handler
 		setupUncaughtExceptionHandler()
 		Global.application = this
