@@ -71,7 +71,7 @@ fun ConnectionItem(
 			// Chains (proxy chain)
 			if (connection.chains.isNotEmpty()) {
 				Text(
-					text = stringResource(R.string.connections_chain, connection.chains.joinToString(" → ")),
+					text = stringResource(R.string.connections_chain, connection.chains.reversed().joinToString(" → ")),
 					style = MaterialTheme.typography.bodySmall,
 					color = MaterialTheme.colorScheme.secondary,
 					maxLines = 1,
