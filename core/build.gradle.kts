@@ -28,15 +28,6 @@ android {
     }
 }
 
-androidComponents {
-    onVariants { variant ->
-        val variantName = variant.name.replaceFirstChar(Char::titlecase)
-        tasks
-            .matching { it.name == "compile${variantName}Kotlin" || it.name == "compile${variantName}JavaWithJavac" }
-            .configureEach { dependsOn("cargoBuild") }
-    }
-}
-
 kotlin {
     jvmToolchain(25)
 }
@@ -71,3 +62,8 @@ cargo {
     profile = "release"
 }
 
+val rustJniLibsDir = layout.buildDirectory.dir("rustJniLibs/android").get()!!
+tasks.matching { it.name.matches(Regex("merge.*JniLibFolders")) }.configureEach {
+    inputs.dir(rustJniLibsDir)
+    dependsOn("cargoBuild")
+}
