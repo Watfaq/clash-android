@@ -5,7 +5,7 @@ plugins {
 	alias(libs.plugins.ktlint)
 }
 
-val baseVersionName = "0.3.3"
+val baseVersionName = "0.4.0"
 val Project.verName: String get() = "${baseVersionName}$versionNameSuffix.${exec("git rev-parse --short HEAD")}"
 val Project.verCode: Int get() = exec("git rev-list --count HEAD").toInt()
 val Project.isDevVersion: Boolean get() = exec("git tag -l v$baseVersionName").isEmpty()
