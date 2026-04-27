@@ -33,7 +33,7 @@ kotlin {
 }
 
 dependencies {
-	implementation(files("../deps/rustls-platform-verifier-0.1.1.aar"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.runtime)

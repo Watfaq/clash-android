@@ -42,7 +42,7 @@ http-body-util = "0.1"
 urlencoding = "2"
 
 rustls = { version = "0.23", default-features = false, features = ["std", "aws-lc-rs"] }
-reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream"] }
+reqwest = { git = "https://github.com/seanmonstar/reqwest", default-features = false, features = ["rustls", "stream"] }
 tokio-stream = "0.1"
 rustls-platform-verifier = "0.7"
 tikv-jemallocator = { version = "0.6", optional = true }

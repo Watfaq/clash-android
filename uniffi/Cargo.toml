@@ -21,14 +21,18 @@ codegen-units = 1
 panic = "unwind"
 strip = true
 
-# Inherits from release but keeps symbol names + line tables so panic
-# backtraces printed via RUST_BACKTRACE / color_eyre are symbolicated in
-# logcat. APK gets noticeably bigger; do not ship.
-[profile.release-dbg]
+[profile.detailed-release]
 inherits = "release"
+opt-level = 1
+lto = "thin"
+
 strip = "none"
 debug = "line-tables-only"
 split-debuginfo = "off"
+panic = "unwind"
+
+incremental = true
+codegen-units = 256
 
 [profile.dev]
 opt-level = 1

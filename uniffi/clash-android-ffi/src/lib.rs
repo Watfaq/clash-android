@@ -72,7 +72,7 @@ pub struct FinalProfile {
 pub extern "system" fn java_init(
     mut env: jni::EnvUnowned,
     _class: jni::objects::JClass,
-    _app: jni::objects::JObject,
+    context: jni::objects::JObject,
 ) {
     use jni::{Outcome, errors::Result as JniResult};
 
@@ -134,14 +134,21 @@ pub extern "system" fn java_init(
         }
         info!("Init logger and crypto provider initialized");
     });
+
     #[cfg(target_os = "android")]
     {
-        let _ = env.with_env(|env| -> jni::errors::Result<()> {
-            if let Err(e) = rustls_platform_verifier::android::init_with_env(env, _app) {
-                error!("Failed to init rustls platform verifier: {:?}", e);
-            }
-            Ok(())
-        });
+        use jni::Outcome;
+        match env
+            .with_env(|env| -> Result<(), jni::errors::Error> {
+                rustls_platform_verifier::android::init_with_env(env, context)?;
+                Ok(())
+            })
+            .into_outcome()
+        {
+            Outcome::Ok(_) => info!("Initialized rustls_platform_verifier"),
+            Outcome::Err(e) => error!("rustls_platform_verifier init JNI error: {e:?}"),
+            Outcome::Panic(p) => std::panic::resume_unwind(p),
+        };
     }
 }
 
