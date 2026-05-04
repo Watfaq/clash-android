@@ -64,7 +64,7 @@ jobs:
           rustup target add x86_64-linux-android
 
       - name: Setup sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.10
 
       - uses: taiki-e/install-action@v2
         with:
