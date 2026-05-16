@@ -80,12 +80,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          workspaces: "uniffi -> target"
-      
+      - name: Setup SCCache & AWS-LC-RS prebuilt NASM objects
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "AWS_LC_SYS_PREBUILT_NASM=1" >> $GITHUB_ENV
+
       - name: Decode Keystore
         if: github.event_name != 'pull_request'
         env:
