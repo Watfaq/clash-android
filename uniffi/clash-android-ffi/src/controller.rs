@@ -206,8 +206,19 @@ impl ClashController {
         self.request("GET", &path, None).await
     }
 
-    /// Get memory statistics
+    /// Get memory statistics.
+    /// When the `mimalloc` feature is enabled, returns process RSS from
+    /// `mi_process_info` directly; otherwise falls back to the clash HTTP API.
     pub async fn get_memory(&self) -> Result<MemoryResponse, EyreError> {
+        #[cfg(feature = "mimalloc")]
+        {
+            let stats = crate::get_mimalloc_stats();
+            return Ok(MemoryResponse {
+                inuse: stats.current_rss as i64,
+                oslimit: stats.peak_rss as i64,
+            });
+        }
+        #[cfg(not(feature = "mimalloc"))]
         self.request("GET", "/memory", None).await
     }
 
