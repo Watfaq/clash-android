@@ -17,7 +17,6 @@ import rs.clash.android.util.NotificationHelper
 import rs.clash.android.util.PermissionHelper
 import uniffi.clash_android_ffi.ProfileOverride
 import uniffi.clash_android_ffi.runClash
-import uniffi.clash_android_ffi.shutdown
 import java.io.File
 
 var tunService: TunService? = null
@@ -126,7 +125,7 @@ class TunService : VpnService() {
 				}
 		}
 
-		val finalProfile =
+		val instance =
 			runClash(
 				Global.profilePath,
 				Global.application.cacheDir.toString(),
@@ -136,7 +135,7 @@ class TunService : VpnService() {
 					ipv6 = prefs.getBoolean("ipv6", true),
 				),
 			)
-		Global.proxyPort = finalProfile.mixedPort
+		Global.clashInstance = instance
 	}
 
 	private fun startForegroundServiceIfNeeded() {
@@ -176,8 +175,9 @@ class TunService : VpnService() {
 			isDestroying = true
 		}
 		Log.i("clash", "Cleaning up VPN service")
-		// pass `shutdown` t0 clash-lib
-		shutdown()
+		// shutdown clash-rs via ClashInstance
+		Global.clashInstance?.shutdown()
+		Global.clashInstance = null
 
 		try {
 			vpnInterface?.close()
@@ -188,7 +188,7 @@ class TunService : VpnService() {
 		vpnInterface = null
 		tunFd = null
 		tunService = null
-		Global.proxyPort = null
+		Global.clashInstance = null
 		Global.isServiceRunning.value = false
 		isDestroying = false
 	}

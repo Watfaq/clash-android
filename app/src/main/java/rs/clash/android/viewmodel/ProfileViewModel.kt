@@ -327,7 +327,7 @@ class ProfileViewModel : ViewModel() {
 				
 				// Auto-detect proxy if VPN is running and user didn't specify one
 				val effectiveProxyUrl =
-					proxyUrl ?: Global.proxyPort?.let { port ->
+					proxyUrl ?: Global.clashInstance?.mixedPort()?.let { port ->
 						"http://127.0.0.1:$port"
 					}
 				

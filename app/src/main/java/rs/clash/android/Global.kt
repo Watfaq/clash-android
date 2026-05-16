@@ -2,6 +2,7 @@ package rs.clash.android
 
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
+import uniffi.clash_android_ffi.ClashInstance
 import uniffi.clash_android_ffi.EyreException
 import uniffi.clash_android_ffi.formatEyreError
 import android.app.Application as AndroidApplication
@@ -18,7 +19,7 @@ class Application : AndroidApplication() {
 object Global {
 	var profilePath: String = ""
 	val isServiceRunning = MutableStateFlow(false)
-	var proxyPort: UShort? = null
+	var clashInstance: ClashInstance? = null
 	lateinit var application: Application
 }
 

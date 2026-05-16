@@ -30,7 +30,6 @@ import uniffi.clash_android_ffi.EyreException
 import uniffi.clash_android_ffi.MemoryResponse
 import uniffi.clash_android_ffi.Proxy
 import uniffi.clash_android_ffi.formatEyreError
-import uniffi.clash_android_ffi.shutdown
 
 class HomeViewModel : ViewModel() {
 	var profilePath = MutableLiveData<String?>(null)
@@ -194,7 +193,7 @@ class HomeViewModel : ViewModel() {
 	}
 
 	fun stopVpn() {
-		shutdown()
+		Global.clashInstance?.shutdown()
 		tunService?.stopVpn()
 	}
 }
