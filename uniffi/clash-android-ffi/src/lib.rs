@@ -7,71 +7,7 @@ static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 #[cfg(feature = "mimalloc")]
-unsafe extern "C" {
-    /// https://microsoft.github.io/mimalloc/group__extended.html#ga1ea89844e2494f81b30d49b4cec80fb2
-    fn mi_process_info(
-        elapsed_msecs: *mut usize,
-        user_msecs: *mut usize,
-        system_msecs: *mut usize,
-        current_rss: *mut usize,
-        peak_rss: *mut usize,
-        current_commit: *mut usize,
-        peak_commit: *mut usize,
-        page_faults: *mut usize,
-    );
-}
-
-#[cfg(feature = "mimalloc")]
-#[derive(uniffi::Record)]
-pub struct MimallocStats {
-    pub elapsed_msecs: u64,
-    pub user_msecs: u64,
-    pub system_msecs: u64,
-    /// Current resident set size (bytes)
-    pub current_rss: u64,
-    /// Peak resident set size (bytes)
-    pub peak_rss: u64,
-    /// Current committed memory (bytes)
-    pub current_commit: u64,
-    /// Peak committed memory (bytes)
-    pub peak_commit: u64,
-    pub page_faults: u64,
-}
-
-#[cfg(feature = "mimalloc")]
-#[uniffi::export]
-pub fn get_mimalloc_stats() -> MimallocStats {
-    let mut elapsed_msecs: usize = 0;
-    let mut user_msecs: usize = 0;
-    let mut system_msecs: usize = 0;
-    let mut current_rss: usize = 0;
-    let mut peak_rss: usize = 0;
-    let mut current_commit: usize = 0;
-    let mut peak_commit: usize = 0;
-    let mut page_faults: usize = 0;
-    unsafe {
-        mi_process_info(
-            &raw mut elapsed_msecs,
-            &raw mut user_msecs,
-            &raw mut system_msecs,
-            &raw mut current_rss,
-            &raw mut peak_rss,
-            &raw mut current_commit,
-            &raw mut peak_commit,
-            &raw mut page_faults,
-        );
-    }
-    MimallocStats {
-        elapsed_msecs: elapsed_msecs as u64,
-        user_msecs: user_msecs as u64,
-        system_msecs: system_msecs as u64,
-        current_rss: current_rss as u64,
-        peak_rss: peak_rss as u64,
-        current_commit: current_commit as u64,
-        peak_commit: peak_commit as u64,
-        page_faults: page_faults as u64,
-    }
-}
+pub mod mimalloc;
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
@@ -89,11 +25,12 @@ use clash_lib::{
         def::{Config as ConfigDef, DNSMode, LogLevel, Port},
         internal::config::TunConfig,
     },
-    start,
+    shutdown as clash_shutdown, start,
 };
 use log::init_logger;
 use once_cell::sync::OnceCell;
-use tokio::{sync::broadcast, task::JoinHandle};
+use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
 use url::Host;
 
@@ -133,10 +70,26 @@ pub struct ProfileOverride {
     pub ipv6: bool,
 }
 
-#[derive(uniffi::Record, Default)]
-pub struct FinalProfile {
-    #[uniffi(default = 7890)]
-    pub mixed_port: u16,
+#[derive(uniffi::Object)]
+pub struct ClashInstance {
+    mixed_port: u16,
+    cancel_token: CancellationToken,
+    _handle: Option<JoinHandle<eyre::Result<()>>>,
+}
+
+#[uniffi::export]
+impl ClashInstance {
+    /// The mixed HTTP/SOCKS port the proxy is listening on
+    pub fn mixed_port(&self) -> u16 {
+        self.mixed_port
+    }
+
+    /// Shut down clash-rs and cancel the background task
+    pub fn shutdown(&self) {
+        self.cancel_token.cancel();
+        clash_shutdown();
+        info!("clash-rs shutdown");
+    }
 }
 
 #[unsafe(export_name = "Java_rs_clash_android_MainActivity_javaInit")]
@@ -234,11 +187,10 @@ async fn run_clash(
     config_path: String,
     work_dir: String,
     over: ProfileOverride,
-) -> Result<FinalProfile, EyreError> {
+) -> Result<Arc<ClashInstance>, EyreError> {
     std::env::set_current_dir(&work_dir)?;
-    let mut final_profile = FinalProfile::default();
     let mut config_def = ConfigDef::try_from(PathBuf::from(config_path.clone()))?;
-    final_profile.mixed_port = config_def.mixed_port.get_or_insert(Port(over.mixed_port)).0;
+    let mixed_port = config_def.mixed_port.get_or_insert(Port(over.mixed_port)).0;
     config_def.port = config_def.port.or_else(|| over.http_port.map(Port));
     config_def.socks_port = config_def.socks_port.or_else(|| over.socks_port.map(Port));
 
@@ -386,23 +338,31 @@ async fn run_clash(
 
     info!("Config path: {config_path}\n\tTUN fd: {}", over.tun_fd);
 
-    let _handle: JoinHandle<eyre::Result<()>> = tokio::spawn(async {
-        let (log_tx, _) = broadcast::channel(100);
+    let cancel_token = CancellationToken::new();
+    let token = cancel_token.clone();
+    let handle: JoinHandle<eyre::Result<()>> = tokio::spawn(async move {
+        let (log_tx, _) = tokio::sync::broadcast::channel(100);
         info!("Starting clash-rs");
-        if let Err(err) = start(config, work_dir, log_tx).await {
-            error!("clash-rs start error: {:#}", eyre::eyre!(err));
+        let start_result = start(config, work_dir, log_tx, token.child_token());
+        tokio::select! {
+            result = start_result => {
+                if let Err(err) = result {
+                    error!("clash-rs start error: {:#}", eyre::eyre!(err));
+                }
+            }
+            _ = token.cancelled() => {
+                info!("clash-rs cancelled");
+            }
         }
-
         info!("Quitting clash-rs");
         Ok(())
     });
-    Ok(final_profile)
-}
 
-#[uniffi::export]
-fn shutdown() {
-    clash_lib::shutdown();
-    info!("clashrs shutdown");
+    Ok(Arc::new(ClashInstance {
+        mixed_port,
+        cancel_token,
+        _handle: Some(handle),
+    }))
 }
 
 uniffi::setup_scaffolding!("clash_android_ffi");

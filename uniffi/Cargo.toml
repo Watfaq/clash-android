@@ -44,4 +44,5 @@ opt-level = 3
 
 [patch.crates-io]
 async-compat = { git = "https://github.com/element-hq/async-compat", rev = "5a27c8b290f1f1dcfc0c4ec22c464e38528aa591" }
-shadowsocks = { git = "https://github.com/Watfaq/shadowsocks-rust", rev = "dee2d932dc580e0e1b7a5a591ff5f8c51f70495e" }
+rustls = { git = "https://github.com/Watfaq/rustls.git", branch = "watfaq/0.23.40" }
+tokio-rustls = { git = "https://github.com/Watfaq/tokio-rustls.git", branch = "watfaq/0.26.4" }

@@ -212,7 +212,7 @@ impl ClashController {
     pub async fn get_memory(&self) -> Result<MemoryResponse, EyreError> {
         #[cfg(feature = "mimalloc")]
         {
-            let stats = crate::get_mimalloc_stats();
+            let stats = crate::mimalloc::get_mimalloc_stats();
             return Ok(MemoryResponse {
                 inuse: stats.current_rss as i64,
                 oslimit: stats.peak_rss as i64,

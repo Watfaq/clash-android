@@ -46,6 +46,7 @@ urlencoding = "2"
 rustls = { version = "0.23", default-features = false, features = ["std", "aws-lc-rs"] }
 reqwest = { git = "https://github.com/seanmonstar/reqwest", default-features = false, features = ["rustls", "stream"] }
 tokio-stream = "0.1"
+tokio-util = { version = "0.7", features = ["rt"] }
 rustls-platform-verifier = "0.7"
 tikv-jemallocator = { version = "0.6", optional = true }
 mimalloc = { version = "0.1", default-features = false, optional = true }
