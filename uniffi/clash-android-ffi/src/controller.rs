@@ -214,8 +214,8 @@ impl ClashController {
         {
             let stats = crate::mimalloc::get_mimalloc_stats();
             return Ok(MemoryResponse {
-                inuse: stats.current_rss as i64,
-                oslimit: stats.peak_rss as i64,
+                inuse: stats.current_commit as i64,
+                oslimit: stats.peak_commit as i64,
             });
         }
         #[cfg(not(feature = "mimalloc"))]
