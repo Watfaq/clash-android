@@ -6,9 +6,6 @@ static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: ::mimalloc::MiMalloc = ::mimalloc::MiMalloc;
 
-#[cfg(feature = "mimalloc")]
-pub mod mimalloc;
-
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::{Arc, Once};
