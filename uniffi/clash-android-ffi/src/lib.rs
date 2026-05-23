@@ -16,6 +16,7 @@ use clash_lib::{
     app::{
         dns,
         dns::config::{DNSListenAddr, DNSNetMode, NameServer},
+        logging::LogEvent,
     },
     config::{
         config::Controller,
@@ -33,6 +34,7 @@ use url::Host;
 
 pub mod controller;
 pub mod log;
+pub mod log_buffer;
 pub mod util;
 
 type EyreError = eyre::Error;
@@ -335,10 +337,30 @@ async fn run_clash(
 
     info!("Config path: {config_path}\n\tTUN fd: {}", over.tun_fd);
 
+    // Ensure the in-app log buffer is initialized (max 2000 entries)
+    log_buffer::ensure_log_buffer(2000);
+
     let cancel_token = CancellationToken::new();
     let token = cancel_token.clone();
     let handle: JoinHandle<eyre::Result<()>> = tokio::spawn(async move {
-        let (log_tx, _) = tokio::sync::broadcast::channel(100);
+        let (log_tx, mut log_rx) = tokio::sync::broadcast::channel(256);
+
+        // Collect clash-lib logs into the in-app log buffer
+        tokio::spawn(async move {
+            loop {
+                match log_rx.recv().await {
+                    Ok(event) => log_buffer::push_log(event),
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                        log_buffer::push_log(LogEvent {
+                            level: LogLevel::Warning,
+                            msg: format!("log channel lagged, skipped {n} messages"),
+                        });
+                    }
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                }
+            }
+        });
+
         info!("Starting clash-rs");
         let start_result = start(config, work_dir, log_tx, token.child_token());
         tokio::select! {
