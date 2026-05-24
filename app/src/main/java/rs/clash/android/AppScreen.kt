@@ -15,7 +15,6 @@ import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ConnectionsScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
-import com.ramcosta.composedestinations.generated.destinations.LogScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.PanelScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.ProfileScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.SettingsScreenDestination
@@ -65,7 +64,6 @@ fun ClashApp(
 				HomeScreenDestination animateWith SlideHorizontalTransitions
 				PanelScreenDestination animateWith SlideHorizontalTransitions
 				ProfileScreenDestination animateWith SlideHorizontalTransitions
-				LogScreenDestination animateWith SlideHorizontalTransitions
 				SettingsScreenDestination animateWith SlideHorizontalTransitions
 				ConnectionsScreenDestination animateWith ScaleTransitions
 			}
