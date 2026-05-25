@@ -46,12 +46,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import rs.clash.android.R
+import rs.clash.android.formatSize
 import rs.clash.android.model.Profile
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.math.log10
-import kotlin.math.pow
 
 @Composable
 fun ActiveProfileCard(
@@ -80,7 +79,7 @@ fun ActiveProfileCard(
 				Spacer(modifier = Modifier.width(16.dp))
 				Column(modifier = Modifier.weight(1f)) {
 					Text(
-						text = "当前活动配置",
+						text = stringResource(R.string.profile_active_config),
 						style = MaterialTheme.typography.labelMedium,
 						color = MaterialTheme.colorScheme.primary,
 					)
@@ -113,7 +112,7 @@ fun ActiveProfileCard(
 						strokeWidth = 2.dp,
 					)
 					Spacer(modifier = Modifier.width(8.dp))
-					Text("验证中...")
+					Text(stringResource(R.string.verifying))
 				} else {
 					Icon(
 						Icons.Default.VerifiedUser,
@@ -121,7 +120,7 @@ fun ActiveProfileCard(
 						modifier = Modifier.size(16.dp),
 					)
 					Spacer(modifier = Modifier.width(8.dp))
-					Text("验证配置")
+					Text(stringResource(R.string.profile_verify_btn))
 				}
 			}
 		}
@@ -148,12 +147,12 @@ fun ProfileCard(
 				showRenameDialog.value = false
 				newName.value = profile.name
 			},
-			title = { Text("重命名配置") },
+			title = { Text(stringResource(R.string.profile_rename)) },
 			text = {
 				OutlinedTextField(
 					value = newName.value,
 					onValueChange = { newName.value = it },
-					label = { Text("配置名称") },
+					label = { Text(stringResource(R.string.profile_config_name)) },
 					singleLine = true,
 				)
 			},
@@ -166,7 +165,7 @@ fun ProfileCard(
 						}
 					},
 				) {
-					Text("确定")
+					Text(stringResource(R.string.confirm))
 				}
 			},
 			dismissButton = {
@@ -176,7 +175,7 @@ fun ProfileCard(
 						newName.value = profile.name
 					},
 				) {
-					Text("取消")
+					Text(stringResource(R.string.cancel))
 				}
 			},
 		)
@@ -226,7 +225,7 @@ fun ProfileCard(
 				)
 				if (profile.type == rs.clash.android.model.ProfileType.REMOTE && profile.lastUpdated != null) {
 					Text(
-						text = "更新: ${dateFormat.format(Date(profile.lastUpdated))}",
+						text = "${stringResource(R.string.profile_update_config)}: ${dateFormat.format(Date(profile.lastUpdated))}",
 						style = MaterialTheme.typography.bodySmall,
 						color = MaterialTheme.colorScheme.primary,
 					)
@@ -247,7 +246,7 @@ fun ProfileCard(
 				) {
 					if (!profile.isActive) {
 						DropdownMenuItem(
-							text = { Text("设为活动配置") },
+							text = { Text(stringResource(R.string.profile_set_active)) },
 							onClick = {
 								onActivate()
 								showMenu.value = false
@@ -259,7 +258,7 @@ fun ProfileCard(
 					}
 					if (profile.type == rs.clash.android.model.ProfileType.REMOTE && onUpdate != null) {
 						DropdownMenuItem(
-							text = { Text("更新配置") },
+							text = { Text(stringResource(R.string.profile_update_config)) },
 							onClick = {
 								onUpdate()
 								showMenu.value = false
@@ -270,7 +269,7 @@ fun ProfileCard(
 						)
 					}
 					DropdownMenuItem(
-						text = { Text("重命名") },
+						text = { Text(stringResource(R.string.profile_rename)) },
 						onClick = {
 							showRenameDialog.value = true
 							showMenu.value = false
@@ -280,7 +279,7 @@ fun ProfileCard(
 						},
 					)
 					DropdownMenuItem(
-						text = { Text("删除") },
+						text = { Text(stringResource(R.string.profile_delete)) },
 						onClick = {
 							onDelete()
 							showMenu.value = false
@@ -386,9 +385,4 @@ fun VerificationResultCard(
 	}
 }
 
-fun formatFileSize(size: Long): String {
-	if (size <= 0) return "0 B"
-	val units = arrayOf("B", "KB", "MB", "GB")
-	val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt().coerceIn(0, units.size - 1)
-	return String.format(Locale.US, "%.1f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
-}
+fun formatFileSize(size: Long): String = formatSize(size)

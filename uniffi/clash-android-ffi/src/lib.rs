@@ -131,7 +131,6 @@ pub extern "system" fn java_init(
 
         unsafe {
             std::env::set_var("RUST_BACKTRACE", "1");
-            // std::env::set_var("NO_COLOR", "1");
         }
         init_logger(level.into());
         color_eyre::install().unwrap();
@@ -242,53 +241,6 @@ async fn run_clash(
     } else {
         config.dns.default_nameserver.clone()
     };
-    // 需要 clash-rs 实现 respect-rules
-    // let proxy_server_nameserver = if config.dns.proxy_server_nameserver.is_none() {
-    //     vec![
-    //         NameServer {
-    //             net: DNSNetMode::DoT,
-    //             host: Host::Domain("dns.alidns.com".to_string()),
-    //             port: 853,
-    //             interface: None,
-    //             proxy: None,
-    //         },
-    //         NameServer {
-    //             net: DNSNetMode::DoT,
-    //             host: Host::Domain("dot.pub".to_string()),
-    //             port: 853,
-    //             interface: None,
-    //             proxy: None,
-    //         },
-    //     ]
-    // } else {
-    //     config
-    //         .dns
-    //         .proxy_server_nameserver
-    //         .clone()
-    //         .unwrap_or_default()
-    // };
-    // 需要 clash-rs 实现 dns 路由
-    // let nameserver = if config.dns.nameserver.is_empty() {
-    //     vec![
-    //         NameServer {
-    //             net: DNSNetMode::DoT,
-    //             host: Host::Domain("one.one.one.one".to_string()),
-    //             port: 853,
-    //             interface: None,
-    //             proxy: None,
-    //         },
-    //         NameServer {
-    //             net: DNSNetMode::DoT,
-    //             host: Host::Domain("dns.google".to_string()),
-    //             port: 853,
-    //             interface: None,
-    //             proxy: None,
-    //         },
-    //     ]
-    // } else {
-    //     config.dns.nameserver.clone()
-    // };
-
     let nameserver = if config.dns.nameserver.is_empty() {
         vec![
             NameServer {
@@ -322,7 +274,6 @@ async fn run_clash(
         },
         nameserver,
         default_nameserver,
-        // proxy_server_nameserver: Some(proxy_server_nameserver),
         ..config.dns
     };
     if over.fake_ip {

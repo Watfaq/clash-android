@@ -95,11 +95,7 @@ fun SettingsScreen(
 	if (showInfoDialog) {
 		TextInfoDialog(
 			title = stringResource(R.string.about_title),
-			content =
-				"""
-				已知问题:
-				- 有些配置项需要重启 VPN 才可生效。
-				""".trimIndent(),
+			content = stringResource(R.string.known_issues_settings),
 			onDismiss = { showInfoDialog = false },
 		)
 	}

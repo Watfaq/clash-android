@@ -250,12 +250,12 @@ impl ClashController {
 
 #[cfg(unix)]
 impl ClashController {
-    async fn request_no_response(
+    async fn do_request(
         &self,
         method: &str,
         path: &str,
         body: Option<Vec<u8>>,
-    ) -> Result<(), EyreError> {
+    ) -> Result<hyper::body::Bytes, EyreError> {
         let client = Client::builder(TokioExecutor::new()).build(UnixConnector);
         let uri: hyper::Uri = UnixUri::new(&self.socket_path, path).into();
 
@@ -283,7 +283,21 @@ impl ClashController {
             return Err(eyre::eyre!("HTTP status error: {}", response.status()));
         }
 
-        Ok(())
+        response
+            .into_body()
+            .collect()
+            .await
+            .wrap_err("Failed to read response body")
+            .map(|b| b.to_bytes())
+    }
+
+    async fn request_no_response(
+        &self,
+        method: &str,
+        path: &str,
+        body: Option<Vec<u8>>,
+    ) -> Result<(), EyreError> {
+        self.do_request(method, path, body).await.map(|_| ())
     }
 
     async fn request<T>(
@@ -295,40 +309,7 @@ impl ClashController {
     where
         T: serde::de::DeserializeOwned,
     {
-        let uri: hyper::Uri = UnixUri::new(&self.socket_path, path).into();
-        let client = Client::builder(TokioExecutor::new()).build(UnixConnector);
-
-        let request_builder = Request::builder()
-            .uri(uri)
-            .method(method)
-            .header("Content-Type", "application/json");
-
-        let request = if let Some(body_data) = body {
-            request_builder
-                .body(Full::new(Bytes::from(body_data)))
-                .wrap_err("Failed to build request with body")?
-        } else {
-            request_builder
-                .body(Full::new(Bytes::new()))
-                .wrap_err("Failed to build request")?
-        };
-
-        let response = client
-            .request(request)
-            .await
-            .wrap_err("HTTP request failed")?;
-
-        if !response.status().is_success() {
-            return Err(eyre::eyre!("HTTP status error: {}", response.status()));
-        }
-
-        let body_bytes = response
-            .into_body()
-            .collect()
-            .await
-            .wrap_err("Failed to read response body")?
-            .to_bytes();
-
+        let body_bytes = self.do_request(method, path, body).await?;
         serde_json::from_slice(&body_bytes).wrap_err_with(|| {
             format!(
                 "Failed to parse JSON response: {}",
@@ -340,28 +321,41 @@ impl ClashController {
 
 #[cfg(not(unix))]
 impl ClashController {
-    async fn request_no_response(
+    async fn do_request(
         &self,
         _method: &str,
         _path: &str,
         _body: Option<Vec<u8>>,
-    ) -> Result<(), EyreError> {
+    ) -> Result<hyper::body::Bytes, EyreError> {
         Err(eyre::eyre!(
             "ClashController requires Unix domain sockets, which are not available on this platform"
         ))
     }
 
+    async fn request_no_response(
+        &self,
+        method: &str,
+        path: &str,
+        body: Option<Vec<u8>>,
+    ) -> Result<(), EyreError> {
+        self.do_request(method, path, body).await.map(|_| ())
+    }
+
     async fn request<T>(
         &self,
-        _method: &str,
-        _path: &str,
-        _body: Option<Vec<u8>>,
+        method: &str,
+        path: &str,
+        body: Option<Vec<u8>>,
     ) -> Result<T, EyreError>
     where
         T: serde::de::DeserializeOwned,
     {
-        Err(eyre::eyre!(
-            "ClashController requires Unix domain sockets, which are not available on this platform"
-        ))
+        let body_bytes = self.do_request(method, path, body).await?;
+        serde_json::from_slice(&body_bytes).wrap_err_with(|| {
+            format!(
+                "Failed to parse JSON response: {}",
+                String::from_utf8_lossy(&body_bytes)
+            )
+        })
     }
 }

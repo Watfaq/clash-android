@@ -13,7 +13,6 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.async
@@ -32,7 +31,8 @@ import uniffi.clash_android_ffi.Proxy
 import uniffi.clash_android_ffi.formatEyreError
 
 class HomeViewModel : ViewModel() {
-	var profilePath = MutableLiveData<String?>(null)
+	var profilePath by mutableStateOf<String?>(null)
+		private set
 	var isVpnRunning by mutableStateOf(tunService != null)
 		private set
 
@@ -59,7 +59,7 @@ class HomeViewModel : ViewModel() {
 		SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
 			if (key == "profile_path") {
 				val path = sharedPreferences.getString("profile_path", null)
-				profilePath.value = path
+				profilePath = path
 				Global.profilePath = path ?: ""
 			}
 		}
@@ -68,7 +68,7 @@ class HomeViewModel : ViewModel() {
 		val context = Global.application.applicationContext
 		val sharedPreferences = context.getSharedPreferences("file_prefs", MODE_PRIVATE)
 		val initialPath = sharedPreferences.getString("profile_path", null)
-		profilePath.value = initialPath
+		profilePath = initialPath
 		Global.profilePath = initialPath ?: ""
 
 		sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferenceChangeListener)

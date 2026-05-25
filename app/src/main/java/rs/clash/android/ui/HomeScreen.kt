@@ -26,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -104,11 +103,7 @@ fun HomeScreen(
 	if (showInfoDialog) {
 		TextInfoDialog(
 			title = stringResource(R.string.about_title),
-			content =
-				"""
-				已知问题:
-				- 目前 clash-rs 的优雅退出存在一些 bug, 为了正确性目前关闭 VPN 时会自动重启应用。
-				""".trimIndent(),
+			content = stringResource(R.string.known_issues_home),
 			onDismiss = { showInfoDialog = false },
 		)
 	}
@@ -136,10 +131,10 @@ fun HomeScreen(
 			)
 		},
 	) { padding ->
-		val memory by remember { derivedStateOf { viewModel.memoryUsage } }
-		val connections by remember { derivedStateOf { viewModel.connectionCount } }
-		val download by remember { derivedStateOf { viewModel.totalDownload } }
-		val upload by remember { derivedStateOf { viewModel.totalUpload } }
+		val memory = viewModel.memoryUsage
+		val connections = viewModel.connectionCount
+		val download = viewModel.totalDownload
+		val upload = viewModel.totalUpload
 
 		OverviewTab(
 			memory = memory,
