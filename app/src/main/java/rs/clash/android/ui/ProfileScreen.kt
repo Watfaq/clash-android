@@ -116,12 +116,7 @@ fun ProfileScreen(
 	if (showInfoDialog) {
 		TextInfoDialog(
 			title = stringResource(R.string.about_title),
-			content =
-				"""
-				已知问题:
-				- 目前 clash-rs 并非100%兼容 mihomo 的配置文件, 应用配置文件前可先检验配置文件合法性。
-				- 切换配置文件后需要重启应用。
-				""".trimIndent(),
+			content = stringResource(R.string.known_issues_profile),
 			onDismiss = { showInfoDialog = false },
 		)
 	}
@@ -139,16 +134,15 @@ fun ProfileScreen(
 					remoteProxyUrl.value = ""
 				}
 			},
-			title = { Text("添加远程配置") },
+			title = { Text(stringResource(R.string.profile_add_remote)) },
 			text = {
 				Column(
 					verticalArrangement = Arrangement.spacedBy(8.dp),
 					modifier = Modifier.verticalScroll(rememberScrollState()),
 				) {
-					// Show download progress
 					if (vm.isDownloading) {
 						Text(
-							text = "正在下载配置...",
+							text = stringResource(R.string.profile_downloading),
 							style = MaterialTheme.typography.bodyMedium,
 							fontWeight = FontWeight.Bold,
 							color = MaterialTheme.colorScheme.primary,
@@ -190,8 +184,8 @@ fun ProfileScreen(
 					OutlinedTextField(
 						value = remoteName.value,
 						onValueChange = { remoteName.value = it },
-						label = { Text("配置名称") },
-						placeholder = { Text("我的远程配置") },
+						label = { Text(stringResource(R.string.profile_config_name)) },
+						placeholder = { Text(stringResource(R.string.profile_name_placeholder)) },
 						singleLine = true,
 						modifier = Modifier.fillMaxWidth(),
 						enabled = !vm.isDownloading,
@@ -199,8 +193,8 @@ fun ProfileScreen(
 					OutlinedTextField(
 						value = remoteUrl.value,
 						onValueChange = { remoteUrl.value = it },
-						label = { Text("订阅 URL") },
-						placeholder = { Text("https://example.com/config.yaml") },
+						label = { Text(stringResource(R.string.profile_subscription_url)) },
+						placeholder = { Text(stringResource(R.string.profile_url_placeholder)) },
 						singleLine = true,
 						modifier = Modifier.fillMaxWidth(),
 						enabled = !vm.isDownloading,
@@ -208,8 +202,8 @@ fun ProfileScreen(
 					OutlinedTextField(
 						value = remoteUserAgent.value,
 						onValueChange = { remoteUserAgent.value = it },
-						label = { Text("User-Agent (可选)") },
-						placeholder = { Text("自定义浏览器标识") },
+						label = { Text(stringResource(R.string.profile_ua_label)) },
+						placeholder = { Text(stringResource(R.string.profile_ua_placeholder)) },
 						singleLine = true,
 						modifier = Modifier.fillMaxWidth(),
 						enabled = !vm.isDownloading,
@@ -217,8 +211,8 @@ fun ProfileScreen(
 					OutlinedTextField(
 						value = remoteProxyUrl.value,
 						onValueChange = { remoteProxyUrl.value = it },
-						label = { Text("HTTP 代理 (可选)") },
-						placeholder = { Text("http://proxy.example.com:8080") },
+						label = { Text(stringResource(R.string.profile_proxy_label)) },
+						placeholder = { Text(stringResource(R.string.profile_proxy_placeholder)) },
 						singleLine = true,
 						modifier = Modifier.fillMaxWidth(),
 						enabled = !vm.isDownloading,
@@ -235,7 +229,7 @@ fun ProfileScreen(
 							contentDescription = null,
 						)
 						Spacer(modifier = Modifier.width(8.dp))
-						Text("启用自动更新")
+						Text(stringResource(R.string.profile_auto_update))
 					}
 				}
 			},
@@ -251,7 +245,6 @@ fun ProfileScreen(
 								remoteUserAgent.value.takeIf { it.isNotBlank() },
 								remoteProxyUrl.value.takeIf { it.isNotBlank() },
 							)
-							// Don't close dialog immediately - let download complete first
 						}
 					},
 					enabled = remoteName.value.isNotBlank() && remoteUrl.value.isNotBlank() && !vm.isDownloading,
@@ -262,7 +255,7 @@ fun ProfileScreen(
 							strokeWidth = 2.dp,
 						)
 					} else {
-						Text("确定")
+						Text(stringResource(R.string.confirm))
 					}
 				}
 			},
@@ -278,7 +271,7 @@ fun ProfileScreen(
 					},
 					enabled = !vm.isDownloading,
 				) {
-					Text("取消")
+					Text(stringResource(R.string.cancel))
 				}
 			},
 		)
@@ -291,13 +284,13 @@ fun ProfileScreen(
 				showNameDialog.value = false
 				profileName.value = ""
 			},
-			title = { Text("输入配置名称") },
+			title = { Text(stringResource(R.string.profile_enter_config_name)) },
 			text = {
 				OutlinedTextField(
 					value = profileName.value,
 					onValueChange = { profileName.value = it },
-					label = { Text("配置名称") },
-					placeholder = { Text(vm.selectedFile?.name ?: "我的配置") },
+					label = { Text(stringResource(R.string.profile_config_name)) },
+					placeholder = { Text(vm.selectedFile?.name ?: stringResource(R.string.profile_my_config)) },
 					singleLine = true,
 				)
 			},
@@ -314,7 +307,7 @@ fun ProfileScreen(
 						profileName.value = ""
 					},
 				) {
-					Text("确定")
+					Text(stringResource(R.string.confirm))
 				}
 			},
 			dismissButton = {
@@ -325,7 +318,7 @@ fun ProfileScreen(
 						vm.clearSelection()
 					},
 				) {
-					Text("取消")
+					Text(stringResource(R.string.cancel))
 				}
 			},
 		)
@@ -379,7 +372,7 @@ fun ProfileScreen(
 						)
 						Spacer(modifier = Modifier.height(8.dp))
 						Text(
-							text = "暂无活动配置",
+							text = stringResource(R.string.profile_no_active),
 							style = MaterialTheme.typography.bodyMedium,
 							color = MaterialTheme.colorScheme.onSurfaceVariant,
 						)
@@ -390,7 +383,7 @@ fun ProfileScreen(
 			// Profiles List
 			if (vm.profiles.isNotEmpty()) {
 				Text(
-					text = "所有配置 (${vm.profiles.size})",
+					text = stringResource(R.string.profile_all_profiles, vm.profiles.size),
 					style = MaterialTheme.typography.titleMedium,
 					fontWeight = FontWeight.Bold,
 				)
@@ -442,7 +435,7 @@ fun ProfileScreen(
 						modifier = Modifier.size(20.dp),
 					)
 					Spacer(modifier = Modifier.width(8.dp))
-					Text("本地配置")
+					Text(stringResource(R.string.profile_local_config))
 				}
 				
 				FilledTonalButton(
@@ -457,7 +450,7 @@ fun ProfileScreen(
 						modifier = Modifier.size(20.dp),
 					)
 					Spacer(modifier = Modifier.width(8.dp))
-					Text("远程配置")
+					Text(stringResource(R.string.profile_remote_config))
 				}
 			}
 		}

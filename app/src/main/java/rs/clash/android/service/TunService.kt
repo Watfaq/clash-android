@@ -113,6 +113,11 @@ class TunService : VpnService() {
 		vpnInterface = builder.establish()
 
 		tunFd = vpnInterface?.fd
+		val fd = tunFd ?: run {
+			Log.e("clash", "VPN interface fd is null, aborting")
+			stopVpn()
+			return
+		}
 		val assets = Global.application.assets
 		listOf("Country.mmdb", "geosite.dat").forEach { name ->
 			assets
@@ -130,7 +135,7 @@ class TunService : VpnService() {
 				Global.profilePath,
 				Global.application.cacheDir.toString(),
 				ProfileOverride(
-					tunFd!!,
+					fd,
 					fakeIp = prefs.getBoolean("fake_ip", false),
 					ipv6 = prefs.getBoolean("ipv6", true),
 				),

@@ -41,7 +41,6 @@ class MainActivity : ComponentActivity() {
 		// Request notification permission (Android 13+)
 		requestNotificationPermission()
 
-		// enableEdgeToEdge()
 		setContent {
 			ClashAndroidTheme {
 				Surface(color = MaterialTheme.colorScheme.background) {

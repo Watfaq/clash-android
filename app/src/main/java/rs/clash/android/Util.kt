@@ -11,7 +11,7 @@ fun formatSize(size: Long): String {
 	if (size <= 0) return "0 B"
 	val units = arrayOf("B", "KB", "MB", "GB", "TB")
 	val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
-	return String.Companion.format(Locale.US, "%.2f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
+	return String.format(Locale.US, "%.2f %s", size / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
 }
 
 val KClass<*>.componentName: ComponentName

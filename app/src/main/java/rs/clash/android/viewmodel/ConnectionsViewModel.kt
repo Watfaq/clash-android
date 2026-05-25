@@ -7,7 +7,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import rs.clash.android.Global
 import uniffi.clash_android_ffi.ClashController
@@ -15,6 +18,7 @@ import uniffi.clash_android_ffi.Connection
 
 class ConnectionsViewModel : ViewModel() {
 	private val controller by lazy { ClashController("${Global.application.cacheDir}/clash.sock") }
+	private var pollingJob: Job? = null
 
 	var connections by mutableStateOf<List<Connection>>(emptyList())
 		private set
@@ -36,12 +40,17 @@ class ConnectionsViewModel : ViewModel() {
 	}
 
 	private fun startPolling() {
-		viewModelScope.launch {
-			while (true) {
+		pollingJob = viewModelScope.launch(Dispatchers.Default) {
+			while (isActive) {
 				fetchConnections()
-				delay(2000) // Poll every 2 seconds
+				delay(2000)
 			}
 		}
+	}
+
+	override fun onCleared() {
+		super.onCleared()
+		pollingJob?.cancel()
 	}
 
 	fun fetchConnections() {
