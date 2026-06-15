@@ -214,66 +214,41 @@ async fn run_clash(
     };
 
     config.general.ipv6 = over.ipv6;
-    let default_nameserver = if config.dns.default_nameserver.is_empty() {
-        // Bootstrap nameservers. These are built with no parent resolver, so the
-        // host must be a literal IP (a `Host::Domain` would hit the resolve path
-        // and fail). The IPv6 servers let resolution work on IPv6-only uplinks
-        // (e.g. 464XLAT cellular), where the interface has no IPv4 address and the
-        // IPv4 servers are unreachable.
+    // Bootstrap nameservers. These are built with no parent resolver, so the
+    // host must be a literal IP (a `Host::Domain` would hit the resolve path
+    // and fail).
+    let udp_bootstrap = |host: Host| NameServer {
+        net: DNSNetMode::Udp,
+        host,
+        port: 53,
+        interface: None,
+        proxy: None,
+    };
+    let mut default_nameserver = if config.dns.default_nameserver.is_empty() {
         vec![
-            NameServer {
-                net: DNSNetMode::Udp,
-                host: Host::Ipv4(Ipv4Addr::new(223, 5, 5, 5)), // AliDNS
-                port: 53,
-                interface: None,
-                proxy: None,
-            },
-            NameServer {
-                net: DNSNetMode::Udp,
-                host: Host::Ipv4(Ipv4Addr::new(223, 6, 6, 6)), // AliDNS
-                port: 53,
-                interface: None,
-                proxy: None,
-            },
-            NameServer {
-                net: DNSNetMode::Udp,
-                host: Host::Ipv4(Ipv4Addr::new(8, 8, 8, 8)), // Google
-                port: 53,
-                interface: None,
-                proxy: None,
-            },
-            NameServer {
-                net: DNSNetMode::Udp,
-                // AliDNS public IPv6
-                host: Host::Ipv6(Ipv6Addr::new(0x2400, 0x3200, 0, 0, 0, 0, 0, 1)),
-                port: 53,
-                interface: None,
-                proxy: None,
-            },
-            NameServer {
-                net: DNSNetMode::Udp,
-                // AliDNS public IPv6
-                host: Host::Ipv6(Ipv6Addr::new(
-                    0x2400, 0x3200, 0xbaba, 0, 0, 0, 0, 1,
-                )),
-                port: 53,
-                interface: None,
-                proxy: None,
-            },
-            NameServer {
-                net: DNSNetMode::Udp,
-                // Google public IPv6
-                host: Host::Ipv6(Ipv6Addr::new(
-                    0x2001, 0x4860, 0x4860, 0, 0, 0, 0, 0x8888,
-                )),
-                port: 53,
-                interface: None,
-                proxy: None,
-            },
+            udp_bootstrap(Host::Ipv4(Ipv4Addr::new(223, 5, 5, 5))), // AliDNS
+            udp_bootstrap(Host::Ipv4(Ipv4Addr::new(223, 6, 6, 6))), // AliDNS
+            udp_bootstrap(Host::Ipv4(Ipv4Addr::new(8, 8, 8, 8))),   // Google
         ]
     } else {
         config.dns.default_nameserver.clone()
     };
+    // Always append IPv6 bootstrap servers so resolution works on IPv6-only
+    // uplinks (e.g. 464XLAT cellular), where the interface has no IPv4 address
+    // and the IPv4 servers are unreachable. We append unconditionally — even
+    // when the profile supplies its own `default-nameserver` — because such
+    // profiles are almost always IPv4-only and would otherwise have no usable
+    // bootstrap on an IPv6-only network.
+    let ipv6_bootstrap = [
+        Host::Ipv6(Ipv6Addr::new(0x2400, 0x3200, 0, 0, 0, 0, 0, 1)), // AliDNS
+        Host::Ipv6(Ipv6Addr::new(0x2400, 0x3200, 0xbaba, 0, 0, 0, 0, 1)), // AliDNS
+        Host::Ipv6(Ipv6Addr::new(0x2001, 0x4860, 0x4860, 0, 0, 0, 0, 0x8888)), // Google
+    ];
+    for host in ipv6_bootstrap {
+        if !default_nameserver.iter().any(|ns| ns.host == host) {
+            default_nameserver.push(udp_bootstrap(host));
+        }
+    }
     let nameserver = if config.dns.nameserver.is_empty() {
         vec![
             NameServer {
