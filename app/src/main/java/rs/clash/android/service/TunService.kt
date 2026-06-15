@@ -112,7 +112,7 @@ class TunService : VpnService() {
 		builder.allowBypass()
 		vpnInterface = builder.establish()
 
-		tunFd = vpnInterface?.fd
+		tunFd = vpnInterface?.detachFd()
 		val fd = tunFd ?: run {
 			Log.e("clash", "VPN interface fd is null, aborting")
 			stopVpn()
