@@ -6,7 +6,7 @@ static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: ::mimalloc::MiMalloc = ::mimalloc::MiMalloc;
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::{Arc, Once};
 
@@ -215,24 +215,57 @@ async fn run_clash(
 
     config.general.ipv6 = over.ipv6;
     let default_nameserver = if config.dns.default_nameserver.is_empty() {
+        // Bootstrap nameservers. These are built with no parent resolver, so the
+        // host must be a literal IP (a `Host::Domain` would hit the resolve path
+        // and fail). The IPv6 servers let resolution work on IPv6-only uplinks
+        // (e.g. 464XLAT cellular), where the interface has no IPv4 address and the
+        // IPv4 servers are unreachable.
         vec![
             NameServer {
                 net: DNSNetMode::Udp,
-                host: Host::Domain("223.5.5.5".to_string()),
+                host: Host::Ipv4(Ipv4Addr::new(223, 5, 5, 5)), // AliDNS
                 port: 53,
                 interface: None,
                 proxy: None,
             },
             NameServer {
                 net: DNSNetMode::Udp,
-                host: Host::Domain("223.6.6.6".to_string()),
+                host: Host::Ipv4(Ipv4Addr::new(223, 6, 6, 6)), // AliDNS
                 port: 53,
                 interface: None,
                 proxy: None,
             },
             NameServer {
                 net: DNSNetMode::Udp,
-                host: Host::Domain("8.8.8.8".to_string()),
+                host: Host::Ipv4(Ipv4Addr::new(8, 8, 8, 8)), // Google
+                port: 53,
+                interface: None,
+                proxy: None,
+            },
+            NameServer {
+                net: DNSNetMode::Udp,
+                // AliDNS public IPv6
+                host: Host::Ipv6(Ipv6Addr::new(0x2400, 0x3200, 0, 0, 0, 0, 0, 1)),
+                port: 53,
+                interface: None,
+                proxy: None,
+            },
+            NameServer {
+                net: DNSNetMode::Udp,
+                // AliDNS public IPv6
+                host: Host::Ipv6(Ipv6Addr::new(
+                    0x2400, 0x3200, 0xbaba, 0, 0, 0, 0, 1,
+                )),
+                port: 53,
+                interface: None,
+                proxy: None,
+            },
+            NameServer {
+                net: DNSNetMode::Udp,
+                // Google public IPv6
+                host: Host::Ipv6(Ipv6Addr::new(
+                    0x2001, 0x4860, 0x4860, 0, 0, 0, 0, 0x8888,
+                )),
                 port: 53,
                 interface: None,
                 proxy: None,
