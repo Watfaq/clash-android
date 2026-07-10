@@ -253,14 +253,21 @@ async fn run_clash(
         vec![
             NameServer {
                 net: DNSNetMode::DoT,
-                host: Host::Domain("dns.alidns.com".to_string()),
+                host: Host::Ipv4(Ipv4Addr::new(223, 5, 5, 5)),
                 port: 853,
                 interface: None,
                 proxy: None,
             },
             NameServer {
                 net: DNSNetMode::DoT,
-                host: Host::Domain("dot.pub".to_string()),
+                host: Host::Ipv4(Ipv4Addr::new(223, 6, 6, 6)),
+                port: 853,
+                interface: None,
+                proxy: None,
+            },
+            NameServer {
+                net: DNSNetMode::DoT,
+                host: Host::Ipv4(Ipv4Addr::new(1, 1, 1, 1)),
                 port: 853,
                 interface: None,
                 proxy: None,
