@@ -133,6 +133,9 @@
     <string name="profile_ua_placeholder">自定义浏览器标识</string>
     <string name="profile_proxy_label">HTTP 代理 (可选)</string>
     <string name="profile_proxy_placeholder">http://proxy.example.com:8080</string>
+    <string name="profile_update_proxy_configured">本次更新将使用已配置的 HTTP 代理：%1$s</string>
+    <string name="profile_update_proxy_clash">Clash 内核运行中，本次更新将使用其 HTTP 代理：%1$s</string>
+    <string name="profile_update_proxy_none">Clash 内核未运行，本次更新将不使用 HTTP 代理</string>
     <string name="profile_url_placeholder">https://example.com/config.yaml</string>
     <string name="profile_name_placeholder">我的远程配置</string>
     <string name="profile_all_profiles">所有配置 (%1$d)</string>
