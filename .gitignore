@@ -40,3 +40,4 @@ signing.properties
 uniffi/.vscode/settings.json
 .claude/
 .claude/settings.local.json
+.reasonix

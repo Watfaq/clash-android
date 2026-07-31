@@ -97,7 +97,6 @@ kotlin {
 
 dependencies {
 	implementation(project(":core"))
-	implementation(files("../deps/rustls-platform-verifier-0.1.1.aar"))
 	implementation(platform(libs.androidx.compose.bom))
 	implementation(libs.androidx.lifecycle.viewmodel.compose)
 	implementation(libs.androidx.runtime.livedata)

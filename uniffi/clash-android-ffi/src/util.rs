@@ -45,7 +45,9 @@ pub async fn download_file_with_progress(
     let ua = user_agent.unwrap_or_else(|| "clash-android/1.0".to_string());
     info!("Using User-Agent: {}", ua);
 
-    // Build reqwest client
+    // Build reqwest client.
+    // reqwest v0.12.28 with rustls-tls-webpki-roots uses bundled Mozilla CA
+    // certificates and does NOT depend on rustls-platform-verifier.
     let mut client_builder = reqwest::Client::builder()
         .user_agent(&ua)
         .redirect(reqwest::redirect::Policy::limited(10));

@@ -6,10 +6,6 @@
 -keep class com.sun.jna.* { *; }
 -keepclassmembers class * extends com.sun.jna.* { public *; }
 
-# rustls-platform-verifier
--keep, includedescriptorclasses class org.rustls.platformverifier.** { *; }
-
-
 # Serializer for classes with named companion objects are retrieved using `getDeclaredClasses`.
 # If you have any, replace classes with those containing named companion objects.
 -keepattributes InnerClasses # Needed for `getDeclaredClasses`.
