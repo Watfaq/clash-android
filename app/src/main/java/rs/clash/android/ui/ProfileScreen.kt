@@ -81,6 +81,13 @@ fun ProfileScreen(
 	val wasDownloading = remember { mutableStateOf(false) }
 
 	var showInfoDialog by remember { mutableStateOf(false) }
+
+	// Update dialog state
+	val showUpdateDialog = remember { mutableStateOf(false) }
+	val updateProfile = remember { mutableStateOf<rs.clash.android.model.Profile?>(null) }
+	val updateUserAgent = remember { mutableStateOf("") }
+	val updateProxyUrl = remember { mutableStateOf("") }
+	val wasUpdating = remember { mutableStateOf(false) }
 	
 	// Auto-close remote dialog when download completes
 	LaunchedEffect(vm.isDownloading) {
@@ -93,6 +100,13 @@ fun ProfileScreen(
 			remoteUserAgent.value = ""
 			remoteProxyUrl.value = ""
 			wasDownloading.value = false
+		} else if (wasUpdating.value && !vm.isDownloading && showUpdateDialog.value) {
+			// Update completed successfully, close dialog
+			showUpdateDialog.value = false
+			updateProfile.value = null
+			updateUserAgent.value = ""
+			updateProxyUrl.value = ""
+			wasUpdating.value = false
 		} else if (vm.isDownloading) {
 			wasDownloading.value = true
 		}
@@ -118,6 +132,125 @@ fun ProfileScreen(
 			title = stringResource(R.string.about_title),
 			content = stringResource(R.string.known_issues_profile),
 			onDismiss = { showInfoDialog = false },
+		)
+	}
+
+	// Update profile dialog
+	if (showUpdateDialog.value && updateProfile.value != null) {
+		val profile = updateProfile.value!!
+		AlertDialog(
+			onDismissRequest = {
+				if (!vm.isDownloading) {
+					showUpdateDialog.value = false
+					updateProfile.value = null
+					updateUserAgent.value = ""
+					updateProxyUrl.value = ""
+				}
+			},
+			title = { Text(stringResource(R.string.profile_update_config)) },
+			text = {
+				Column(
+					verticalArrangement = Arrangement.spacedBy(8.dp),
+					modifier = Modifier.verticalScroll(rememberScrollState()),
+				) {
+					Text(
+						text = profile.name,
+						style = MaterialTheme.typography.titleSmall,
+						fontWeight = FontWeight.Bold,
+					)
+					if (vm.isDownloading) {
+						Text(
+							text = stringResource(R.string.profile_downloading),
+							style = MaterialTheme.typography.bodyMedium,
+							fontWeight = FontWeight.Bold,
+							color = MaterialTheme.colorScheme.primary,
+						)
+						val progress = vm.downloadProgress
+						if (progress != null && progress.total > 0U) {
+							val percentage = (progress.downloaded.toFloat() / progress.total.toFloat())
+							LinearProgressIndicator(
+								progress = { percentage },
+								modifier = Modifier.fillMaxWidth(),
+							)
+							Spacer(modifier = Modifier.height(4.dp))
+							Row(
+								modifier = Modifier.fillMaxWidth(),
+								horizontalArrangement = Arrangement.SpaceBetween,
+							) {
+								Text(
+									text = "${formatFileSize(progress.downloaded.toLong())} / ${formatFileSize(progress.total.toLong())}",
+									style = MaterialTheme.typography.bodySmall,
+									color = MaterialTheme.colorScheme.onSurfaceVariant,
+								)
+								Text(
+									text = "${(percentage * 100).toInt()}%",
+									style = MaterialTheme.typography.bodySmall,
+									color = MaterialTheme.colorScheme.primary,
+								)
+							}
+						} else {
+							LinearProgressIndicator(
+								modifier = Modifier.fillMaxWidth(),
+							)
+						}
+						Spacer(modifier = Modifier.height(8.dp))
+					}
+					OutlinedTextField(
+						value = updateUserAgent.value,
+						onValueChange = { updateUserAgent.value = it },
+						label = { Text(stringResource(R.string.profile_ua_label)) },
+						placeholder = { Text(stringResource(R.string.profile_ua_placeholder)) },
+						singleLine = true,
+						modifier = Modifier.fillMaxWidth(),
+						enabled = !vm.isDownloading,
+					)
+					OutlinedTextField(
+						value = updateProxyUrl.value,
+						onValueChange = { updateProxyUrl.value = it },
+						label = { Text(stringResource(R.string.profile_proxy_label)) },
+						placeholder = { Text(stringResource(R.string.profile_proxy_placeholder)) },
+						singleLine = true,
+						modifier = Modifier.fillMaxWidth(),
+						enabled = !vm.isDownloading,
+					)
+				}
+			},
+			confirmButton = {
+				TextButton(
+					onClick = {
+						vm.updateRemoteProfile(
+							context,
+							profile,
+							updateUserAgent.value.takeIf { it.isNotBlank() },
+							updateProxyUrl.value.takeIf { it.isNotBlank() },
+						)
+						wasUpdating.value = true
+					},
+					enabled = !vm.isDownloading,
+				) {
+					if (vm.isDownloading) {
+						CircularProgressIndicator(
+							modifier = Modifier.size(16.dp),
+							strokeWidth = 2.dp,
+						)
+					} else {
+						Text(stringResource(R.string.profile_update_config))
+					}
+				}
+			},
+			dismissButton = {
+				TextButton(
+					onClick = {
+						showUpdateDialog.value = false
+						updateProfile.value = null
+						updateUserAgent.value = ""
+						updateProxyUrl.value = ""
+					},
+					enabled = !vm.isDownloading,
+				) {
+					Text(stringResource(R.string.cancel))
+				}
+			},
 		)
 	}
 
@@ -408,7 +541,12 @@ fun ProfileScreen(
 					onRename = { newName -> vm.renameProfile(context, profile, newName) },
 					onUpdate =
 						if (profile.type == ProfileType.REMOTE) {
-							{ vm.updateRemoteProfile(context, profile) }
+							{
+								updateProfile.value = profile
+								updateUserAgent.value = profile.userAgent ?: ""
+								updateProxyUrl.value = profile.proxyUrl ?: ""
+								showUpdateDialog.value = true
+							}
 						} else {
 							null
 						},

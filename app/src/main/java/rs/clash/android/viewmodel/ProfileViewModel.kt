@@ -431,7 +431,11 @@ class ProfileViewModel : ViewModel() {
 					val file = File(profile.filePath)
 					// Use provided parameters or fall back to profile's stored values
 					val effectiveUserAgent = userAgent ?: profile.userAgent
-					val effectiveProxyUrl = proxyUrl ?: profile.proxyUrl
+					val effectiveProxyUrl = proxyUrl
+						?: profile.proxyUrl
+						?: Global.clashInstance?.mixedPort()?.let { port ->
+							"http://127.0.0.1:$port"
+						}
 					
 					// Progress callback - update on main thread
 					val progressCallback =
